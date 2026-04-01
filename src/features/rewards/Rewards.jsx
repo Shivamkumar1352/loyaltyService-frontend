@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { Gift, Star, Tag, Zap, CheckCircle } from 'lucide-react'
 import { rewardsAPI } from '../../core/api'
 import { fmt } from '../../shared/utils'
-import { Skeleton, Modal, Badge } from '../../shared/components'
+import { Skeleton, Modal, Badge,  } from '../../shared/components'
+import ScratchCard from '../../shared/components/ScratchCard'
 import toast from 'react-hot-toast'
 
 const TIER_CONFIG = {
@@ -26,6 +27,9 @@ export default function Rewards() {
   const [redeemPoints, setRedeemPoints] = useState('')
   const [redeeming, setRedeeming] = useState(false)
   const [tab, setTab] = useState('catalog')
+  const [scratchCardOpen, setScratchCardOpen] = useState(false);
+const [selectedReward, setSelectedReward] = useState(null);
+const [isRedeemingScratch, setIsRedeemingScratch] = useState(false);
 
   const load = async (pageNumber = 0) => {
     setLoading(true)
@@ -66,6 +70,39 @@ export default function Rewards() {
       toast.error(err.response?.data?.message || 'Redemption failed')
     } finally { setRedeeming(false) }
   }
+
+  const handleScratchComplete = async (reward) => {
+  setIsRedeemingScratch(true);
+  try {
+    // API only expects rewardId - auto redeem happens here
+    const response = await rewardsAPI.redeem({ rewardId: reward.id });
+    
+    // Show toast with cashback amount
+    const cashbackAmount = response?.data?.data?.cashbackAmount || response?.data?.cashbackAmount;
+    if (cashbackAmount) {
+      toast.success(`🎉 You got ₹${cashbackAmount} cashback!`, {
+        icon: '💰',
+        duration: 3000,
+      });
+    } else {
+      toast.success(`🎉 Successfully redeemed: ${reward.name}!`, {
+        icon: '🎁',
+        duration: 3000,
+      });
+    }
+    
+    await load(); // Reload data to update points balance
+    
+    // Return the response data so ScratchCard can extract cashback amount
+    return response?.data?.data || response?.data;
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'Redemption failed');
+    setScratchCardOpen(false); // Close on error
+    throw err; // Re-throw to let ScratchCard handle error
+  } finally {
+    setIsRedeemingScratch(false);
+  }
+};
 
   const handleRedeemPoints = async () => {
     if (!redeemPoints || Number(redeemPoints) < 1) {
@@ -201,7 +238,32 @@ export default function Rewards() {
                     </div>
                     <p className="font-bold text-sm mb-1" style={{ color: 'var(--text-primary)' }}>{item.name}</p>
                     <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>{item.description}</p>
-                    <div className="flex items-center justify-between">
+                    
+<div className="flex items-center justify-between">
+  <div>
+    <span className="text-sm font-black" style={{ color: 'var(--brand)' }}>
+      {fmt.number(item.pointsRequired)} pts
+    </span>
+    {item.tierRequired && (
+      <span className="text-xs ml-2 px-1.5 py-0.5 rounded" style={{ 
+        background: 'rgba(245,158,11,0.1)', 
+        color: '#f59e0b' 
+      }}>
+        {item.tierRequired}+
+      </span>
+    )}
+  </div>
+  <button 
+    onClick={() => {
+      setSelectedReward(item);
+      setScratchCardOpen(true);
+    }} 
+    disabled={!canRedeem}
+    className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-all ${canRedeem ? 'btn-primary' : 'btn-secondary opacity-50 cursor-not-allowed'}`}>
+    {'Scratch'}
+  </button>
+</div>
+                    {/* <div className="flex items-center justify-between">
                       <div>
                         <span className="text-sm font-black" style={{ color: 'var(--brand)' }}>
                           {fmt.number(item.pointsRequired)} pts
@@ -212,11 +274,16 @@ export default function Rewards() {
                           </span>
                         )}
                       </div>
-                      <button onClick={() => setRedeemModal(item)} disabled={!canRedeem}
-                        className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-all ${canRedeem ? 'btn-primary' : 'btn-secondary opacity-50 cursor-not-allowed'}`}>
-                        Redeem
-                      </button>
-                    </div>
+                      <button 
+  onClick={() => {
+    setSelectedReward(item);
+    setScratchCardOpen(true);
+  }} 
+  disabled={!canRedeem}
+  className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-all ${canRedeem ? 'btn-primary' : 'btn-secondary opacity-50 cursor-not-allowed'}`}>
+  Scratch & Redeem 🎰
+</button>
+                    </div> */}
                     {item.stock > 0 && item.stock < 10 && (
                       <p className="text-xs mt-2 text-orange-500">Only {item.stock} left!</p>
                     )}
@@ -286,7 +353,7 @@ export default function Rewards() {
       )}
 
       {/* Redeem catalog item modal */}
-      <Modal open={!!redeemModal} onClose={() => setRedeemModal(null)} title="Confirm Redemption">
+      {/* <Modal open={!!redeemModal} onClose={() => setRedeemModal(null)} title="Confirm Redemption">
         {redeemModal && (
           <div className="space-y-4">
             <div className="rounded-xl p-4" style={{ background: 'var(--bg-tertiary)' }}>
@@ -309,7 +376,19 @@ export default function Rewards() {
             </div>
           </div>
         )}
-      </Modal>
+      </Modal> */}
+     <ScratchCard
+  isOpen={scratchCardOpen}
+  onClose={() => {
+    setScratchCardOpen(false);
+    setSelectedReward(null);
+    setIsRedeemingScratch(false);
+  }}
+  reward={selectedReward}
+  onScratchComplete={handleScratchComplete}
+  isRedeeming={isRedeemingScratch}
+  userTier={summary?.tier} // Pass the user's current tier
+/>
 
       {/* Convert points modal */}
       <Modal open={pointsModal} onClose={() => setPointsModal(false)} title="Convert Points to Cash">
