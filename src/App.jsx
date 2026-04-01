@@ -1,0 +1,76 @@
+import { lazy, Suspense, useEffect } from 'react'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { useThemeStore, useAuthStore } from './store'
+import AppLayout from './layouts/AppLayout.jsx'
+import AdminLayout from './layouts/AdminLayout.jsx'
+
+const Login       = lazy(() => import('./features/auth/Login.jsx'))
+const Signup      = lazy(() => import('./features/auth/Signup.jsx'))
+const ForgotPwd   = lazy(() => import('./features/auth/ForgotPassword.jsx'))
+const Dashboard   = lazy(() => import('./features/dashboard/Dashboard.jsx'))
+const AddMoney    = lazy(() => import('./features/wallet/AddMoney.jsx'))
+const Transfer    = lazy(() => import('./features/wallet/Transfer.jsx'))
+const Rewards     = lazy(() => import('./features/rewards/Rewards.jsx'))
+const Transactions= lazy(() => import('./features/transactions/Transactions.jsx'))
+const Profile     = lazy(() => import('./features/profile/Profile.jsx'))
+const AdminDash   = lazy(() => import('./features/admin/AdminDashboard.jsx'))
+const AdminUsers  = lazy(() => import('./features/admin/AdminUsers.jsx'))
+const AdminKyc    = lazy(() => import('./features/admin/AdminKyc.jsx'))
+
+function Loader() {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: 'var(--brand) transparent var(--brand) var(--brand)' }} />
+    </div>
+  )
+}
+
+function ProtectedRoute({ children, adminOnly = false }) {
+  const { isAuthenticated, user } = useAuthStore()
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+  if (adminOnly && user?.role !== 'ADMIN') return <Navigate to="/dashboard" replace />
+  return children
+}
+
+function PublicRoute({ children }) {
+  const { isAuthenticated } = useAuthStore()
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />
+  return children
+}
+
+export default function App() {
+  const { init } = useThemeStore()
+  useEffect(() => { init() }, [])
+
+  return (
+    <Suspense fallback={<Loader />}>
+      <Routes>
+        {/* Public */}
+        <Route path="/login"  element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
+        <Route path="/forgot-password" element={<PublicRoute><ForgotPwd /></PublicRoute>} />
+
+        {/* User app */}
+        <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="dashboard"    element={<Dashboard />} />
+          <Route path="add-money"    element={<AddMoney />} />
+          <Route path="transfer"     element={<Transfer />} />
+          <Route path="rewards"      element={<Rewards />} />
+          <Route path="transactions" element={<Transactions />} />
+          <Route path="profile"      element={<Profile />} />
+        </Route>
+
+        {/* Admin */}
+        <Route path="/admin" element={<ProtectedRoute adminOnly><AdminLayout /></ProtectedRoute>}>
+          <Route index element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="dashboard" element={<AdminDash />} />
+          <Route path="users"     element={<AdminUsers />} />
+          <Route path="kyc"       element={<AdminKyc />} />
+        </Route>
+
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </Suspense>
+  )
+}

@@ -1,0 +1,166 @@
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useForm } from 'react-hook-form'
+import { Eye, EyeOff, Sun, Moon } from 'lucide-react'
+import { authAPI } from '../../core/api'
+import { useThemeStore } from '../../store'
+import toast from 'react-hot-toast'
+
+export default function Signup() {
+  const [showPwd, setShowPwd] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [step, setStep] = useState('form') // 'form' | 'verify'
+  const [email, setEmail] = useState('')
+  const { isDark, toggle } = useThemeStore()
+  const navigate = useNavigate()
+
+  const { register, handleSubmit, watch, formState: { errors } } = useForm()
+  const { register: regOtp, handleSubmit: hsOtp, formState: { errors: eOtp } } = useForm()
+
+  const onSignup = async (data) => {
+    setLoading(true)
+    try {
+      await authAPI.signup({
+        fullName: data.fullName,
+        email: data.email,
+        phone: data.phone,
+        password: data.password,
+      })
+      // setEmail(data.email)
+      // await authAPI.sendOtp({ email: data.email })
+      toast.success('Account created! Please log in.')
+      navigate('/login')
+      // setStep('verify')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Signup failed')
+    } finally { setLoading(false) }
+  }
+
+  // const onVerify = async (data) => {
+  //   setLoading(true)
+  //   try {
+  //     await authAPI.verifyOtp({ email, otp: data.otp })
+  //     toast.success('Email verified! Please log in.')
+  //     navigate('/login')
+  //   } catch (err) {
+  //     toast.error(err.response?.data?.message || 'Invalid OTP')
+  //   } finally { setLoading(false) }
+  // }
+
+  return (
+    <div className="min-h-screen flex" style={{ background: 'var(--bg-primary)' }}>
+      {/* Left panel */}
+      <div className="hidden lg:flex flex-col justify-between w-[45%] p-12 relative overflow-hidden"
+        style={{ background: 'linear-gradient(135deg, #042a1d 0%, #097349 50%, #16b36e 100%)' }}>
+        <div className="absolute inset-0 opacity-10"
+          style={{ backgroundImage: 'radial-gradient(circle at 20% 80%, #fff 1px, transparent 1px), radial-gradient(circle at 80% 20%, #fff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+        <div className="flex items-center gap-3 relative">
+          <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white font-black">W</div>
+          <span className="text-white font-black text-xl tracking-tight">WalletPay</span>
+        </div>
+        <div className="relative">
+          <h1 className="text-white font-black text-4xl leading-tight mb-4">
+            Join millions<br />of smart<br />spenders.
+          </h1>
+          <p className="text-white/70 text-base">Sign up in under 60 seconds. No hidden fees, ever.</p>
+        </div>
+        <p className="text-white/40 text-xs relative">© 2025 WalletPay. All rights reserved.</p>
+      </div>
+
+      {/* Right */}
+      <div className="flex-1 flex flex-col items-center justify-center p-6 lg:p-12">
+        <div className="w-full max-w-sm">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="font-black text-2xl mb-0.5" style={{ color: 'var(--text-primary)' }}>
+                {step === 'form' ? 'Create account' : 'Verify email'}
+              </h2>
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                {step === 'form' ? 'Start your WalletPay journey' : `OTP sent to ${email}`}
+              </p>
+            </div>
+            <button onClick={toggle} className="btn-ghost p-2 rounded-xl">
+              {isDark ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
+          </div>
+
+          {step === 'form' ? (
+            <form onSubmit={handleSubmit(onSignup)} className="space-y-4">
+              <div>
+                <label className="label">Full Name</label>
+                <input className="input-field" placeholder="Jane Smith"
+                  {...register('fullName', { required: 'Name required', minLength: { value: 2, message: 'Min 2 chars' } })} />
+                {errors.fullName && <p className="text-xs text-red-500 mt-1">{errors.fullName.message}</p>}
+              </div>
+              <div>
+                <label className="label">Email</label>
+                <input className="input-field" type="email" placeholder="you@example.com"
+                  {...register('email', { required: 'Email required' })} />
+                {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>}
+              </div>
+              <div>
+                <label className="label">Phone</label>
+                <input className="input-field" type="tel" placeholder="9876543210"
+                  {...register('phone', { required: 'Phone required', pattern: { value: /^[0-9]{10,15}$/, message: '10–15 digits' } })} />
+                {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone.message}</p>}
+              </div>
+              <div>
+                <label className="label">Password</label>
+                <div className="relative">
+                  <input className="input-field pr-10" type={showPwd ? 'text' : 'password'} placeholder="Min 8 chars"
+                    {...register('password', {
+                      required: 'Password required',
+                      minLength: { value: 8, message: 'Min 8 characters' },
+                      pattern: { value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/, message: 'Need upper, lower, number & symbol' }
+                    })} />
+                  <button type="button" onClick={() => setShowPwd(!showPwd)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100">
+                    {showPwd ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+                {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>}
+              </div>
+              <div>
+                <label className="label">Confirm Password</label>
+                <input className="input-field" type="password" placeholder="Re-enter password"
+                  {...register('confirm', {
+                    required: 'Please confirm password',
+                    validate: (v) => v === watch('password') || 'Passwords do not match'
+                  })} />
+                {errors.confirm && <p className="text-xs text-red-500 mt-1">{errors.confirm.message}</p>}
+              </div>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                By creating an account you agree to our Terms & Privacy Policy.
+              </p>
+              <button type="submit" disabled={loading} className="btn-primary w-full">
+                {loading ? 'Creating account…' : 'Create account'}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={hsOtp(onVerify)} className="space-y-4">
+              <div>
+                <label className="label">6-Digit OTP</label>
+                <input className="input-field text-center text-2xl font-mono tracking-widest"
+                  maxLength={8} placeholder="······"
+                  {...regOtp('otp', { required: 'OTP required', minLength: { value: 4, message: 'Min 4 digits' } })} />
+                {eOtp.otp && <p className="text-xs text-red-500 mt-1">{eOtp.otp.message}</p>}
+              </div>
+              <button type="submit" disabled={loading} className="btn-primary w-full">
+                {loading ? 'Verifying…' : 'Verify & Continue'}
+              </button>
+              <button type="button" onClick={() => authAPI.sendOtp({ email }).then(() => toast.success('OTP resent'))}
+                className="btn-ghost w-full text-xs">
+                Resend OTP
+              </button>
+            </form>
+          )}
+
+          <p className="text-center text-sm mt-6" style={{ color: 'var(--text-muted)' }}>
+            Already have an account?{' '}
+            <Link to="/login" className="font-semibold" style={{ color: 'var(--brand)' }}>Sign in</Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
