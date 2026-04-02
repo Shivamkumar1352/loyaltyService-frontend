@@ -2,12 +2,13 @@ import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Plus, ArrowLeftRight, Gift, History,
-  User, Sun, Moon, Menu, X, LogOut, ShieldCheck
+  User, Sun, Moon, Menu, X, LogOut, ShieldCheck, BarChart3
 } from 'lucide-react'
 import { useThemeStore, useAuthStore } from '../store'
 import { authAPI } from '../core/api'
 import toast from 'react-hot-toast'
 import { fmt } from '../shared/utils'
+import NotificationBell from '../shared/components/NotificationBell'
 
 const navItems = [
   { to: '/dashboard',    icon: LayoutDashboard, label: 'Dashboard' },
@@ -15,6 +16,7 @@ const navItems = [
   { to: '/transfer',     icon: ArrowLeftRight,   label: 'Send / Transfer' },
   { to: '/rewards',      icon: Gift,             label: 'Rewards' },
   { to: '/transactions', icon: History,          label: 'Transactions' },
+  { to: '/analytics',    icon: BarChart3,        label: 'Analytics' },
   { to: '/profile',      icon: User,             label: 'Profile / KYC' },
 ]
 
@@ -124,6 +126,7 @@ export default function AppLayout() {
           </button>
           <div className="hidden lg:block" />
           <div className="flex items-center gap-2">
+            <NotificationBell />
             <button onClick={toggle}
               className="btn-ghost p-2 rounded-xl"
               aria-label="Toggle theme">

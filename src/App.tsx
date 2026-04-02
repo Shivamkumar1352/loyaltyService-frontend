@@ -13,9 +13,11 @@ const Transfer = lazy(() => import('./features/wallet/Transfer'))
 const Rewards = lazy(() => import('./features/rewards/Rewards'))
 const Transactions = lazy(() => import('./features/transactions/Transactions'))
 const Profile = lazy(() => import('./features/profile/Profile'))
+const Analytics = lazy(() => import('./features/analytics/Analytics'))
 const AdminDash = lazy(() => import('./features/admin/AdminDashboard'))
 const AdminUsers = lazy(() => import('./features/admin/AdminUsers'))
 const AdminKyc = lazy(() => import('./features/admin/AdminKyc'))
+const AdminRewards = lazy(() => import('./features/admin/AdminRewards'))
 
 function Loader() {
   return (
@@ -40,7 +42,7 @@ function PublicRoute({ children }: { children: JSX.Element }) {
 
 export default function App() {
   const { init } = useThemeStore()
-  useEffect(() => { init() }, [])
+  useEffect(() => { init() }, [init])
 
   return (
     <Suspense fallback={<Loader />}>
@@ -58,6 +60,7 @@ export default function App() {
           <Route path="transfer"     element={<Transfer />} />
           <Route path="rewards"      element={<Rewards />} />
           <Route path="transactions" element={<Transactions />} />
+          <Route path="analytics"    element={<Analytics />} />
           <Route path="profile"      element={<Profile />} />
         </Route>
 
@@ -67,6 +70,7 @@ export default function App() {
           <Route path="dashboard" element={<AdminDash />} />
           <Route path="users"     element={<AdminUsers />} />
           <Route path="kyc"       element={<AdminKyc />} />
+          <Route path="rewards"   element={<AdminRewards />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/login" replace />} />

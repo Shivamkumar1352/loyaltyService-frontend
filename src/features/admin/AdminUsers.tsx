@@ -4,6 +4,7 @@ import { adminAPI } from '../../core/api'
 import { fmt } from '../../shared/utils'
 import { Badge, Pagination, Modal, Table } from '../../shared/components'
 import toast from 'react-hot-toast'
+import { useDebouncedValue } from '../../shared/hooks/useDebouncedValue'
 
 const ROLES = ['USER', 'ADMIN', 'MERCHANT']
 const KYC_STATUSES = ['APPROVED', 'PENDING', 'REJECTED', 'NOT_SUBMITTED']
@@ -12,6 +13,16 @@ const SEARCH_MODES = [
   { value: 'email', label: 'Email' },
   { value: 'phone', label: 'Phone' },
 ]
+
+const getPageData = (payload) => payload?.data || payload
+
+const getUsersFromResponse = (payload) => {
+  const data = getPageData(payload)
+  if (Array.isArray(data)) return { content: data, number: 0, totalPages: 1 }
+  if (Array.isArray(data?.content)) return data
+  if (data) return { content: [data], number: 0, totalPages: 1 }
+  return { content: [], number: 0, totalPages: 0 }
+}
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([])
@@ -28,34 +39,19 @@ export default function AdminUsers() {
   const [kycRejectReason, setKycRejectReason] = useState('')
   const [rewardingKyc, setRewardingKyc] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
-
-  const getPageData = (payload) => payload?.data || payload
-
-  const getUsersFromResponse = (payload) => {
-    const data = getPageData(payload)
-    if (Array.isArray(data)) {
-      return { content: data, number: 0, totalPages: 1 }
-    }
-    if (Array.isArray(data?.content)) {
-      return data
-    }
-    if (data) {
-      return { content: [data], number: 0, totalPages: 1 }
-    }
-    return { content: [], number: 0, totalPages: 0 }
-  }
+  const debouncedSearch = useDebouncedValue(search, 300)
 
   const load = useCallback(async (pageNum = 0) => {
     setLoading(true)
     try {
       let res
-      if (search.trim()) {
+      if (debouncedSearch.trim()) {
         if (searchMode === 'email') {
-          res = await adminAPI.searchByEmail(search.trim())
+          res = await adminAPI.searchByEmail(debouncedSearch.trim())
         } else if (searchMode === 'phone') {
-          res = await adminAPI.searchByPhone(search.trim())
+          res = await adminAPI.searchByPhone(debouncedSearch.trim())
         } else {
-          res = await adminAPI.searchUsers(search.trim(), pageNum)
+          res = await adminAPI.searchUsers(debouncedSearch.trim(), pageNum)
         }
       } else if (filters.kycStatus) {
         res = await adminAPI.searchByKyc(filters.kycStatus, pageNum)
@@ -66,11 +62,10 @@ export default function AdminUsers() {
       setUsers(data.content || [])
       setPage({ current: data.number || 0, total: data.totalPages || 0 })
     } finally { setLoading(false) }
-  }, [search, searchMode, filters])
+  }, [debouncedSearch, searchMode, filters])
 
   useEffect(() => {
-    const t = setTimeout(() => load(0), 300)
-    return () => clearTimeout(t)
+    load(0)
   }, [load])
 
   const openUserDetails = async (row) => {

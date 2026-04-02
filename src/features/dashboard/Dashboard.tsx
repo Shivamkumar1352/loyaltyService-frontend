@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Plus, ArrowLeftRight, Gift, TrendingUp, Eye, EyeOff, ArrowUpRight, ArrowDownLeft, RefreshCw } from 'lucide-react'
 import { walletAPI, rewardsAPI } from '../../core/api'
 import { useAuthStore } from '../../store'
-import { fmt, statusClass } from '../../shared/utils'
+import { fmt } from '../../shared/utils'
 import { Skeleton, Badge } from '../../shared/components'
 
 const TX_ICONS = {

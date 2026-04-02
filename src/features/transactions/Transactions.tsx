@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Download, Filter, FileText, AlertTriangle, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
 import { walletAPI } from '../../core/api'
-import { fmt, statusClass } from '../../shared/utils'
+import { fmt } from '../../shared/utils'
 import { Badge, Pagination, Table, Modal } from '../../shared/components'
 import toast from 'react-hot-toast'
 
@@ -48,7 +48,10 @@ export default function Transactions() {
     } finally { setLoading(false) }
   }, [])
 
-  useEffect(() => { tab === 'txns' ? loadTxns() : loadLedger() }, [tab, loadTxns, loadLedger])
+  useEffect(() => {
+    if (tab === 'txns') loadTxns()
+    else loadLedger()
+  }, [tab, loadTxns, loadLedger])
 
   const downloadStatement = async () => {
     if (!statementDates.from || !statementDates.to) return toast.error('Select date range')

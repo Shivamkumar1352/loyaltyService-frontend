@@ -3,7 +3,21 @@ import { Users, UserCheck, UserX, Clock, RefreshCw, Gift } from 'lucide-react'
 import { adminAPI } from '../../core/api'
 import { fmt } from '../../shared/utils'
 import { Skeleton, StatCard, Modal } from '../../shared/components'
-import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
+import {
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  AreaChart,
+  Area,
+} from 'recharts'
 import toast from 'react-hot-toast'
 
 const COLORS = ['#16b36e', '#3b82f6', '#f59e0b', '#ef4444']
@@ -76,6 +90,13 @@ export default function AdminDashboard() {
     { name: 'Not Submitted', value: stats.kycNotSubmitted },
   ].filter(d => d.value > 0) : []
 
+  const kycBarData = stats ? [
+    { label: 'Approved', value: stats.kycApproved ?? 0, color: '#16b36e' },
+    { label: 'Pending', value: stats.kycPending ?? 0, color: '#f59e0b' },
+    { label: 'Rejected', value: stats.kycRejected ?? 0, color: '#ef4444' },
+    { label: 'Not Submitted', value: stats.kycNotSubmitted ?? 0, color: '#9ca3af' },
+  ] : []
+
   const userRoleData = stats ? [
     { name: 'Users',     value: stats.regularUsers },
     { name: 'Admins',    value: stats.adminUsers },
@@ -87,6 +108,13 @@ export default function AdminDashboard() {
     { label: 'This week', count: stats.newUsersThisWeek },
     { label: 'This month', count: stats.newUsersThisMonth },
   ] : []
+
+  const tooltipStyle = {
+    background: 'var(--bg-secondary)',
+    border: '1px solid var(--border)',
+    borderRadius: 12,
+    fontSize: 12,
+  } as const
 
   return (
     <div className="space-y-6 animate-slide-up">
@@ -132,27 +160,39 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* KYC Pie Chart */}
+        {/* KYC modern bar */}
         <div className="card p-5">
-          <p className="text-sm font-bold mb-4" style={{ color: 'var(--text-primary)' }}>KYC Distribution</p>
-          {loading
-            ? <Skeleton className="h-48 rounded-xl" />
-            : kycData.length === 0
-            ? <div className="h-48 flex items-center justify-center text-sm" style={{ color: 'var(--text-muted)' }}>No data</div>
-            : (
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie data={kycData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                    {kycData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip formatter={(v) => fmt.number(v)} contentStyle={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            )
-          }
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>KYC Status</p>
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
+              style={{ background: 'rgba(22,179,110,0.12)', color: 'var(--brand)' }}>
+              Live
+            </span>
+          </div>
+          {loading ? (
+            <Skeleton className="h-56 rounded-xl" />
+          ) : kycBarData.every((x) => (x.value ?? 0) === 0) ? (
+            <div className="h-56 flex items-center justify-center text-sm" style={{ color: 'var(--text-muted)' }}>No data</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={kycBarData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="kycGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#16b36e" stopOpacity={0.85} />
+                    <stop offset="100%" stopColor="#16b36e" stopOpacity={0.18} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(v) => fmt.number(v)} contentStyle={tooltipStyle} />
+                <Bar dataKey="value" fill="url(#kycGrad)" radius={[12, 12, 0, 0]} isAnimationActive animationDuration={800} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
-        {/* User Role Chart */}
+        {/* User Roles modern donut */}
         <div className="card p-5">
           <p className="text-sm font-bold mb-4" style={{ color: 'var(--text-primary)' }}>User Roles</p>
           {loading
@@ -160,12 +200,43 @@ export default function AdminDashboard() {
             : userRoleData.length === 0
             ? <div className="h-48 flex items-center justify-center text-sm" style={{ color: 'var(--text-muted)' }}>No data</div>
             : (
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={240}>
                 <PieChart>
-                  <Pie data={userRoleData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={70}>
-                    {userRoleData.map((_, i) => <Cell key={i} fill={['#16b36e','#8b5cf6','#3b82f6'][i % 3]} />)}
+                  <defs>
+                    <linearGradient id="roleGrad1" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#16b36e" stopOpacity={0.95} />
+                      <stop offset="100%" stopColor="#3bcf88" stopOpacity={0.65} />
+                    </linearGradient>
+                    <linearGradient id="roleGrad2" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.95} />
+                      <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.65} />
+                    </linearGradient>
+                    <linearGradient id="roleGrad3" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.95} />
+                      <stop offset="100%" stopColor="#60a5fa" stopOpacity={0.65} />
+                    </linearGradient>
+                  </defs>
+                  <Pie
+                    data={userRoleData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={52}
+                    outerRadius={86}
+                    paddingAngle={3}
+                    isAnimationActive
+                    animationDuration={850}
+                  >
+                    {userRoleData.map((_, i) => (
+                      <Cell
+                        key={i}
+                        fill={[ 'url(#roleGrad1)', 'url(#roleGrad2)', 'url(#roleGrad3)' ][i % 3]}
+                        stroke="rgba(255,255,255,0.10)"
+                      />
+                    ))}
                   </Pie>
-                  <Tooltip formatter={(v) => fmt.number(v)} contentStyle={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }} />
+                  <Tooltip formatter={(v) => fmt.number(v)} contentStyle={tooltipStyle} />
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
@@ -175,21 +246,48 @@ export default function AdminDashboard() {
       </div>
 
       {/* Growth metrics */}
-      <div className="card p-5">
-        <p className="text-sm font-bold mb-4" style={{ color: 'var(--text-primary)' }}>New User Growth</p>
-        {loading
-          ? <Skeleton className="h-40 rounded-xl" />
-          : (
-            <div className="grid grid-cols-3 gap-4">
-              {growthData.map(({ label, count }) => (
-                <div key={label} className="text-center p-4 rounded-xl" style={{ background: 'var(--bg-tertiary)' }}>
-                  <p className="text-2xl font-black mb-1" style={{ color: 'var(--brand)' }}>{fmt.number(count)}</p>
-                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{label}</p>
-                </div>
-              ))}
-            </div>
-          )
-        }
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="card p-5">
+          <p className="text-sm font-bold mb-4" style={{ color: 'var(--text-primary)' }}>New User Growth</p>
+          {loading
+            ? <Skeleton className="h-40 rounded-xl" />
+            : (
+              <div className="grid grid-cols-3 gap-4">
+                {growthData.map(({ label, count }) => (
+                  <div key={label} className="text-center p-4 rounded-xl" style={{ background: 'var(--bg-tertiary)' }}>
+                    <p className="text-2xl font-black mb-1" style={{ color: 'var(--brand)' }}>{fmt.number(count)}</p>
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{label}</p>
+                  </div>
+                ))}
+              </div>
+            )
+          }
+        </div>
+
+        <div className="card p-5">
+          <p className="text-sm font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Growth Trend</p>
+          {loading ? (
+            <Skeleton className="h-40 rounded-xl" />
+          ) : growthData.length === 0 ? (
+            <div className="h-40 flex items-center justify-center text-sm" style={{ color: 'var(--text-muted)' }}>No data</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <AreaChart data={growthData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="growthArea" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(v) => fmt.number(v)} contentStyle={tooltipStyle} />
+                <Area type="monotone" dataKey="count" stroke="#3b82f6" strokeWidth={2} fill="url(#growthArea)" isAnimationActive animationDuration={850} />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
+        </div>
       </div>
 
       {/* Today's KYC activity */}

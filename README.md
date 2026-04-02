@@ -20,15 +20,16 @@ Production-grade React + Vite + Tailwind frontend for the WalletPay microservice
 
 ```
 src/
-├── core/api/index.js        # All API endpoints mapped to :8080
+├── core/api/index.ts        # Central API client + endpoints
 ├── shared/
-│   ├── components/          # Table, Modal, Badge, Pagination, StatCard
+│   ├── components/          # Table, Modal, Badge, Pagination, StatCard, NotificationBell
+│   ├── hooks/               # Reusable hooks (e.g. debouncing)
 │   └── utils/               # fmt helpers, status color map
-├── store/index.js           # Zustand: auth + theme (persisted)
+├── store/index.ts           # Zustand: auth + theme + notifications (persisted)
 ├── styles/index.css         # CSS variables, design tokens
 ├── layouts/
-│   ├── AppLayout.jsx        # User sidebar + topbar
-│   └── AdminLayout.jsx      # Admin sidebar
+│   ├── AppLayout.tsx        # User sidebar + topbar
+│   └── AdminLayout.tsx      # Admin sidebar
 ├── features/
 │   ├── auth/                # Login, Signup, ForgotPassword
 │   ├── dashboard/           # Wallet balance, quick actions
@@ -36,8 +37,8 @@ src/
 │   ├── rewards/             # Rewards catalog + redemption
 │   ├── transactions/        # History, ledger, export
 │   ├── profile/             # Profile edit + KYC submit
-│   └── admin/               # Dashboard, Users, KYC review
-└── routes/                  # Protected + public route guards
+│   ├── analytics/           # User analytics charts
+│   └── admin/               # Dashboard, Users, KYC review, Rewards catalog
 ```
 
 ## Getting Started
@@ -98,4 +99,8 @@ Services mapped:
 Create `.env.local` for overrides:
 ```
 VITE_API_BASE_URL=http://localhost:8080
+VITE_RAZORPAY_KEY_ID=your_key
 ```
+
+Notes:
+- In dev, you can also omit `VITE_API_BASE_URL` and rely on the Vite proxy (`/api` → `localhost:8080`).

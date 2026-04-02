@@ -1,7 +1,10 @@
 import axios from 'axios'
+import toast from 'react-hot-toast'
 import { useAuthStore } from '../../store'
 
-const BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:8080'
+// Prefer relative /api calls via Vite proxy in dev.
+// In production, set VITE_API_BASE_URL (e.g. https://api.example.com)
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -10,6 +13,7 @@ const api = axios.create({
 })
 
 let refreshRequest = null
+let lastNetworkToastAt = 0
 
 function getAuthState() {
   return useAuthStore.getState()
@@ -34,8 +38,8 @@ async function refreshAccessToken() {
       throw new Error('Missing refresh token')
     }
 
-    refreshRequest = axios
-      .post(`${BASE_URL}/api/auth/refresh`, { refreshToken }, {
+    refreshRequest = api
+      .post('/api/auth/refresh', { refreshToken }, {
         headers: { 'Content-Type': 'application/json' },
         timeout: 15000,
       })
@@ -84,6 +88,16 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (res) => res,
   async (err) => {
+    // Network error / CORS / timeout
+    if (!err?.response) {
+      const now = Date.now()
+      if (now - lastNetworkToastAt > 2500) {
+        lastNetworkToastAt = now
+        toast.error('Network error. Please check your connection and try again.')
+      }
+      return Promise.reject(err)
+    }
+
     const original = err.config
     const requestUrl = original?.url || ''
     const isRefreshRequest = requestUrl.includes('/api/auth/refresh')
@@ -157,6 +171,13 @@ export const rewardsAPI = {
   getTransactions: (page = 0, size = 10) => api.get(`/api/rewards/transactions?page=${page}&size=${size}`),
   redeem:         (data) => api.post('/api/rewards/redeem', data),
   redeemPoints:   (points) => api.post(`/api/rewards/redeem-points?points=${points}`),
+}
+
+// ─── Rewards (Admin) ───────────────────────────────────────────────────────────
+export const rewardsAdminAPI = {
+  getCatalog: () => api.get('/api/rewards/admin/catalog'),
+  updateItem: (rewardId, data) => api.put(`/api/rewards/admin/catalog/${rewardId}`, data),
+  deleteItem: (rewardId) => api.delete(`/api/rewards/admin/catalog/${rewardId}`),
 }
 
 // ─── Admin ────────────────────────────────────────────────────────────────────

@@ -27,6 +27,22 @@ type AuthState = {
   updateToken: (accessToken: string | null) => void
 }
 
+export type AppNotification = {
+  id: string
+  title: string
+  message?: string
+  createdAt: number
+  severity?: 'success' | 'info' | 'warning' | 'error'
+  href?: string
+}
+
+type NotificationState = {
+  items: AppNotification[]
+  add: (n: Omit<AppNotification, 'id' | 'createdAt'> & { id?: string; createdAt?: number }) => void
+  remove: (id: string) => void
+  clear: () => void
+}
+
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set) => ({
@@ -68,5 +84,30 @@ export const useAuthStore = create<AuthState>()(
       updateToken: (accessToken) => set({ accessToken }),
     }),
     { name: 'auth-storage' }
+  )
+)
+
+export const useNotificationStore = create<NotificationState>()(
+  persist(
+    (set) => ({
+      items: [],
+      add: (n) =>
+        set((s) => {
+          const id = n.id ?? `ntf-${Date.now()}-${Math.random().toString(16).slice(2)}`
+          const createdAt = n.createdAt ?? Date.now()
+          const next: AppNotification = {
+            id,
+            createdAt,
+            title: n.title,
+            message: n.message,
+            severity: n.severity ?? 'info',
+            href: n.href,
+          }
+          return { items: [next, ...s.items].slice(0, 50) }
+        }),
+      remove: (id) => set((s) => ({ items: s.items.filter((x) => x.id !== id) })),
+      clear: () => set({ items: [] }),
+    }),
+    { name: 'notification-storage' }
   )
 )

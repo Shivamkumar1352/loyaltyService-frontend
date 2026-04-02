@@ -3,7 +3,8 @@ import { useForm } from 'react-hook-form'
 import { CheckCircle, XCircle, ArrowLeftRight, User } from 'lucide-react'
 import { walletAPI } from '../../core/api'
 import { fmt } from '../../shared/utils'
-import toast from 'react-hot-toast'
+import PaymentSuccessOverlay from '../../shared/components/PaymentSuccessOverlay'
+import { useNotificationStore } from '../../store'
 
 export default function Transfer() {
   const [loading, setLoading] = useState(false)
@@ -11,6 +12,8 @@ export default function Transfer() {
   const [step, setStep] = useState('form') // 'form' | 'confirm' | 'success' | 'failed'
   const [formData, setFormData] = useState(null)
   const [result, setResult] = useState(null)
+  const [successOpen, setSuccessOpen] = useState(false)
+  const addNtf = useNotificationStore((s) => s.add)
   const { register, handleSubmit, reset, formState: { errors } } = useForm()
 
   const onReview = (data) => {
@@ -34,7 +37,15 @@ export default function Transfer() {
       }
       setResult({ status: 'SUCCESS', ...formData })
       setStep('success')
-      toast.success(mode === 'transfer' ? 'Transfer successful!' : 'Withdrawal successful!')
+      setSuccessOpen(true)
+      addNtf({
+        title: mode === 'transfer' ? 'Transfer successful' : 'Withdrawal successful',
+        message: mode === 'transfer'
+          ? `Sent ${fmt.currency(formData.amount)} to User #${formData.receiverId}`
+          : `Processed ${fmt.currency(formData.amount)} withdrawal`,
+        severity: 'success',
+        href: '/transactions',
+      })
     } catch (err) {
       setResult({ status: 'FAILED', error: err.response?.data?.message || (mode === 'transfer' ? 'Transfer failed' : 'Withdrawal failed') })
       setStep('failed')
@@ -185,27 +196,14 @@ export default function Transfer() {
         </div>
       )}
 
-      {/* Success */}
-      {step === 'success' && (
-        <div className="card p-8 text-center animate-slide-up">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
-            style={{ background: 'rgba(22,179,110,0.12)' }}>
-            <CheckCircle size={32} className="text-green-500" />
-          </div>
-          <h2 className="text-xl font-black mb-1" style={{ color: 'var(--text-primary)' }}>
-            {mode === 'transfer' ? 'Transfer Sent!' : 'Withdrawal Submitted!'}
-          </h2>
-          <p className="text-3xl font-black mb-1" style={{ color: 'var(--brand)' }}>{fmt.currency(result?.amount)}</p>
-          <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
-            {mode === 'transfer'
-              ? `Successfully sent to User #${result?.receiverId}`
-              : 'Your withdrawal request was submitted successfully'}
-          </p>
-          <button onClick={doReset} className="btn-primary w-full">
-            {mode === 'transfer' ? 'New Transfer' : 'New Withdrawal'}
-          </button>
-        </div>
-      )}
+      {/* Full-screen success animation auto-dismisses; no button */}
+      <PaymentSuccessOverlay
+        open={successOpen}
+        title={mode === 'transfer' ? 'Transfer successful' : 'Withdrawal successful'}
+        subtitle={mode === 'transfer' ? `Sent to User #${result?.receiverId}` : 'Money will reflect shortly'}
+        amountText={result?.amount ? fmt.currency(result?.amount) : undefined}
+        onClose={() => { setSuccessOpen(false); doReset() }}
+      />
 
       {/* Failed */}
       {step === 'failed' && (

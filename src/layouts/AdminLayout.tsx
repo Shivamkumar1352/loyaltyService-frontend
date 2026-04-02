@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { NavLink, Outlet, Link } from 'react-router-dom'
-import { LayoutDashboard, Users, ShieldCheck, Sun, Moon, Menu, X, ArrowLeft } from 'lucide-react'
+import { LayoutDashboard, Users, ShieldCheck, Sun, Moon, Menu, X, ArrowLeft, Gift } from 'lucide-react'
 import { useThemeStore, useAuthStore } from '../store'
 import { fmt } from '../shared/utils'
+import NotificationBell from '../shared/components/NotificationBell'
 
 const adminNav = [
   { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/admin/users',     icon: Users,           label: 'Users' },
   { to: '/admin/kyc',       icon: ShieldCheck,     label: 'KYC Review' },
+  { to: '/admin/rewards',   icon: Gift,            label: 'Rewards' },
 ]
 
 export default function AdminLayout() {
@@ -80,9 +82,12 @@ export default function AdminLayout() {
             <Menu size={20} />
           </button>
           <div className="hidden lg:block" />
-          <button onClick={toggle} className="btn-ghost p-2 rounded-xl" aria-label="Toggle theme">
-            {isDark ? <Sun size={17} /> : <Moon size={17} />}
-          </button>
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <button onClick={toggle} className="btn-ghost p-2 rounded-xl" aria-label="Toggle theme">
+              {isDark ? <Sun size={17} /> : <Moon size={17} />}
+            </button>
+          </div>
         </header>
         <main className="flex-1 p-4 lg:p-6 overflow-y-auto animate-fade-in">
           <Outlet />

@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { CheckCircle, XCircle, Eye, RefreshCw, ShieldCheck } from 'lucide-react'
 import { adminAPI } from '../../core/api'
 import { fmt } from '../../shared/utils'
-import { Badge, Pagination, Modal, Skeleton } from '../../shared/components'
+import { Pagination, Modal, Skeleton } from '../../shared/components'
 import toast from 'react-hot-toast'
 
 export default function AdminKyc() {

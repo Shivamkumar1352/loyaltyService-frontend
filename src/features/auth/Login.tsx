@@ -1,45 +1,84 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
-import { Eye, EyeOff, Sun, Moon } from 'lucide-react'
+import { Eye, EyeOff, Sun, Moon, Mail, Phone, KeyRound, MessageSquareText } from 'lucide-react'
 import { authAPI } from '../../core/api'
 import { useAuthStore, useThemeStore } from '../../store'
 import toast from 'react-hot-toast'
+import { normalizeIdentifier } from './authUtils'
 
 export default function Login() {
   const [showPwd, setShowPwd] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [tab, setTab] = useState('email') // 'email' | 'otp'
+  const [mode, setMode] = useState<'password' | 'otp'>('password')
+  const [otpStep, setOtpStep] = useState<'enter_id' | 'enter_otp'>('enter_id')
+  const [identifier, setIdentifier] = useState('')
   const { setAuth } = useAuthStore()
   const { isDark, toggle } = useThemeStore()
   const navigate = useNavigate()
 
-  const { register, handleSubmit, formState: { errors } } = useForm()
-  const { register: reg2, handleSubmit: hs2, formState: { errors: e2 } } = useForm()
+  const { register, handleSubmit, formState: { errors }, setValue } = useForm()
 
-  const onEmailLogin = async (data) => {
+  const doSetAuthFromResponse = (res) => {
+    const payload = res?.data?.data ?? res?.data ?? res
+    const { accessToken, refreshToken, user } = payload || {}
+    if (!accessToken || !user) {
+      throw new Error('Invalid login response')
+    }
+    setAuth(user, accessToken, refreshToken)
+    navigate(user.role === 'ADMIN' ? '/admin/dashboard' : '/dashboard')
+  }
+
+  const onPasswordLogin = async (data) => {
     setLoading(true)
     try {
-      const res = await authAPI.login(data)
-      const { accessToken, refreshToken, user } = res.data
-      setAuth(user, accessToken, refreshToken)
+      const { raw, phone, isEmail, isPhone } = normalizeIdentifier(data.identifier)
+      if (!raw) throw new Error('Identifier required')
+      const pwd = data.password
+      if (!pwd) throw new Error('Password required')
+
+      const res = isEmail
+        ? await authAPI.login({ email: raw, password: pwd })
+        : await authAPI.loginPhone({ phone: isPhone ? phone : raw, password: pwd })
+
+      doSetAuthFromResponse(res)
       toast.success('Welcome back!')
-      navigate(user.role === 'ADMIN' ? '/admin/dashboard' : '/dashboard')
     } catch (err) {
       toast.error(err.response?.data?.message || 'Login failed')
     } finally { setLoading(false) }
   }
 
-  const onPhoneLogin = async (data) => {
+  const onSendOtp = async (data) => {
     setLoading(true)
     try {
-      const res = await authAPI.loginPhone(data)
-      const { accessToken, refreshToken, user } = res.data
-      setAuth(user, accessToken, refreshToken)
-      toast.success('Welcome back!')
-      navigate(user.role === 'ADMIN' ? '/admin/dashboard' : '/dashboard')
+      const { raw, phone, isEmail, isPhone } = normalizeIdentifier(data.identifier)
+      if (!raw) throw new Error('Identifier required')
+      setIdentifier(raw)
+
+      if (isEmail) await authAPI.sendOtp({ email: raw })
+      else await authAPI.sendOtp({ phone: isPhone ? phone : raw })
+
+      toast.success('OTP sent')
+      setOtpStep('enter_otp')
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Login failed')
+      toast.error(err.response?.data?.message || 'Failed to send OTP')
+    } finally { setLoading(false) }
+  }
+
+  const onVerifyOtpLogin = async (data) => {
+    setLoading(true)
+    try {
+      const { raw, phone, isEmail, isPhone } = normalizeIdentifier(identifier)
+      if (!raw) throw new Error('Identifier required')
+
+      const res = isEmail
+        ? await authAPI.verifyOtp({ email: raw, otp: data.otp })
+        : await authAPI.verifyOtp({ phone: isPhone ? phone : raw, otp: data.otp })
+
+      doSetAuthFromResponse(res)
+      toast.success('Welcome back!')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Invalid OTP')
     } finally { setLoading(false) }
   }
 
@@ -86,36 +125,58 @@ export default function Login() {
             </button>
           </div>
 
-          {/* Tabs */}
+          {/* Mode toggle */}
           <div className="flex gap-1 p-1 rounded-xl mb-6" style={{ background: 'var(--bg-tertiary)' }}>
-            {[['email', 'Email'], ['phone', 'Phone']].map(([val, label]) => (
-              <button key={val} onClick={() => setTab(val)}
-                className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${tab === val ? 'text-white shadow-sm' : ''}`}
-                style={tab === val ? { background: 'var(--brand)' } : { color: 'var(--text-muted)' }}>
-                {label}
-              </button>
-            ))}
+            <button
+              type="button"
+              onClick={() => { setMode('password'); setOtpStep('enter_id'); setIdentifier(''); setValue('otp', '') }}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${mode === 'password' ? 'text-white shadow-sm' : ''}`}
+              style={mode === 'password' ? { background: 'var(--brand)' } : { color: 'var(--text-muted)' }}
+            >
+              <div className="inline-flex items-center gap-2 justify-center">
+                <KeyRound size={15} /> Password
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMode('otp'); setOtpStep('enter_id'); setIdentifier(''); setValue('password', '') }}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${mode === 'otp' ? 'text-white shadow-sm' : ''}`}
+              style={mode === 'otp' ? { background: 'var(--brand)' } : { color: 'var(--text-muted)' }}
+            >
+              <div className="inline-flex items-center gap-2 justify-center">
+                <MessageSquareText size={15} /> OTP
+              </div>
+            </button>
           </div>
 
-          {tab === 'email' ? (
-            <form onSubmit={handleSubmit(onEmailLogin)} className="space-y-4">
+          {mode === 'password' ? (
+            <form onSubmit={handleSubmit(onPasswordLogin)} className="space-y-4">
               <div>
-                <label className="label">Email</label>
-                <input className="input-field" type="email" placeholder="you@example.com"
-                  {...register('email', { required: 'Email required' })} />
-                {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>}
+                <label className="label">Email or phone</label>
+                <div className="relative">
+                  <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 opacity-40" />
+                  <input
+                    className="input-field pl-9"
+                    placeholder="you@example.com or 9876543210"
+                    autoComplete="username"
+                    {...register('identifier', { required: 'Email or phone required' })}
+                  />
+                  <Phone size={15} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-30" />
+                </div>
+                {errors.identifier && <p className="text-xs text-red-500 mt-1">{String(errors.identifier.message)}</p>}
               </div>
               <div>
                 <label className="label">Password</label>
                 <div className="relative">
                   <input className="input-field pr-10" type={showPwd ? 'text' : 'password'} placeholder="••••••••"
+                    autoComplete="current-password"
                     {...register('password', { required: 'Password required' })} />
                   <button type="button" onClick={() => setShowPwd(!showPwd)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100">
                     {showPwd ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
-                {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>}
+                {errors.password && <p className="text-xs text-red-500 mt-1">{String(errors.password.message)}</p>}
               </div>
               <div className="flex justify-end">
                 <Link to="/forgot-password" className="text-xs font-medium" style={{ color: 'var(--brand)' }}>
@@ -127,29 +188,74 @@ export default function Login() {
               </button>
             </form>
           ) : (
-            <form onSubmit={hs2(onPhoneLogin)} className="space-y-4">
-              <div>
-                <label className="label">Phone Number</label>
-                <input className="input-field" type="tel" placeholder="9876543210"
-                  {...reg2('phone', { required: 'Phone required', pattern: { value: /^[0-9]{10}$/, message: 'Must be 10 digits' } })} />
-                {e2.phone && <p className="text-xs text-red-500 mt-1">{e2.phone.message}</p>}
-              </div>
-              <div>
-                <label className="label">Password</label>
-                <div className="relative">
-                  <input className="input-field pr-10" type={showPwd ? 'text' : 'password'} placeholder="••••••••"
-                    {...reg2('password', { required: 'Password required' })} />
-                  <button type="button" onClick={() => setShowPwd(!showPwd)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100">
-                    {showPwd ? <EyeOff size={15} /> : <Eye size={15} />}
+            <div className="space-y-4">
+              {otpStep === 'enter_id' ? (
+                <form onSubmit={handleSubmit(onSendOtp)} className="space-y-4">
+                  <div>
+                    <label className="label">Email or phone</label>
+                    <div className="relative">
+                      <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 opacity-40" />
+                      <input
+                        className="input-field pl-9"
+                        placeholder="you@example.com or 9876543210"
+                        {...register('identifier', { required: 'Email or phone required' })}
+                      />
+                      <Phone size={15} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-30" />
+                    </div>
+                    {errors.identifier && <p className="text-xs text-red-500 mt-1">{String(errors.identifier.message)}</p>}
+                  </div>
+                  <button type="submit" disabled={loading} className="btn-primary w-full">
+                    {loading ? 'Sending OTP…' : 'Send OTP'}
                   </button>
-                </div>
-                {e2.password && <p className="text-xs text-red-500 mt-1">{e2.password.message}</p>}
-              </div>
-              <button type="submit" disabled={loading} className="btn-primary w-full">
-                {loading ? 'Signing in…' : 'Sign in'}
-              </button>
-            </form>
+                </form>
+              ) : (
+                <form onSubmit={handleSubmit(onVerifyOtpLogin)} className="space-y-4">
+                  <div className="rounded-xl p-3 text-xs"
+                    style={{ background: 'var(--bg-tertiary)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+                    OTP sent to <span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>{identifier}</span>
+                  </div>
+                  <div>
+                    <label className="label">One-Time Password</label>
+                    <input
+                      className="input-field text-center text-2xl font-mono tracking-widest"
+                      maxLength={8}
+                      placeholder="······"
+                      {...register('otp', { required: 'OTP required', minLength: { value: 4, message: 'Min 4 digits' } })}
+                    />
+                    {errors.otp && <p className="text-xs text-red-500 mt-1">{String(errors.otp.message)}</p>}
+                  </div>
+                  <button type="submit" disabled={loading} className="btn-primary w-full">
+                    {loading ? 'Verifying…' : 'Verify & Sign in'}
+                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setOtpStep('enter_id'); setIdentifier(''); setValue('otp', '') }}
+                      className="btn-secondary flex-1"
+                    >
+                      Change
+                    </button>
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={async () => {
+                        const { raw, phone, isEmail, isPhone } = normalizeIdentifier(identifier)
+                        try {
+                          if (isEmail) await authAPI.sendOtp({ email: raw })
+                          else await authAPI.sendOtp({ phone: isPhone ? phone : raw })
+                          toast.success('OTP resent')
+                        } catch (err) {
+                          toast.error(err.response?.data?.message || 'Failed to resend OTP')
+                        }
+                      }}
+                      className="btn-ghost flex-1 text-xs"
+                    >
+                      Resend OTP
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
           )}
 
           <p className="text-center text-sm mt-6" style={{ color: 'var(--text-muted)' }}>

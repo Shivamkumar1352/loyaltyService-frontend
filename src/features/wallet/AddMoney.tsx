@@ -1,16 +1,12 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import {
-  CheckCircle,
-  XCircle,
-  Download,
-  CreditCard,
-  Smartphone,
-} from "lucide-react";
+import { XCircle, CreditCard, Smartphone } from "lucide-react";
 import { walletAPI } from "../../core/api";
 import { fmt } from "../../shared/utils";
 import toast from "react-hot-toast";
 import { useAuthStore } from "../../store";
+import PaymentSuccessOverlay from "../../shared/components/PaymentSuccessOverlay";
+import { useNotificationStore } from "../../store";
 
 const QUICK_AMOUNTS = [100, 250, 500, 1000, 2000, 5000];
 const METHODS = [
@@ -32,6 +28,8 @@ export default function AddMoney() {
     formState: { errors },
   } = useForm();
   const user = useAuthStore((state) => state.user);
+  const addNtf = useNotificationStore((s) => s.add);
+  const [successOpen, setSuccessOpen] = useState(false);
 
   // Load Razorpay script
   useEffect(() => {
@@ -83,7 +81,13 @@ export default function AddMoney() {
               ref: verifyRes.data?.referenceId || "TXN" + Date.now(),
             });
             setStep("success");
-            toast.success(`₹${data.amount} added to wallet!`);
+            setSuccessOpen(true);
+            addNtf({
+              title: "Money added successfully",
+              message: `Added ${fmt.currency(data.amount)} to your wallet`,
+              severity: "success",
+              href: "/transactions",
+            });
           } catch (err) {
             setTxResult({
               amount: data.amount,
@@ -142,17 +146,6 @@ export default function AddMoney() {
     setTxResult(null);
   };
 
-  const downloadReceipt = () => {
-    const content = `WalletPay Receipt\n------------------\nAmount: ${fmt.currency(txResult?.amount)}\nStatus: ${txResult?.status}\nRef: ${txResult?.ref}\nDate: ${new Date().toLocaleString()}`;
-    const blob = new Blob([content], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "receipt.txt";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   return (
     <div className="max-w-md mx-auto animate-slide-up">
       <div className="mb-6">
@@ -185,40 +178,14 @@ export default function AddMoney() {
         </div>
       )}
 
-      {/* Success */}
-      {step === "success" && (
-        <div className="card p-8 text-center animate-slide-up">
-          <div
-            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
-            style={{ background: "rgba(22,179,110,0.12)" }}
-          >
-            <CheckCircle size={32} className="text-green-500" />
-          </div>
-          <h2
-            className="text-xl font-black mb-1"
-            style={{ color: "var(--text-primary)" }}
-          >
-            Payment Successful
-          </h2>
-          <p
-            className="text-3xl font-black mb-1"
-            style={{ color: "var(--brand)" }}
-          >
-            {fmt.currency(txResult?.amount)}
-          </p>
-          <p className="text-xs mb-6" style={{ color: "var(--text-muted)" }}>
-            Ref: {txResult?.ref}
-          </p>
-          <div className="flex gap-3">
-            <button onClick={downloadReceipt} className="btn-secondary flex-1">
-              <Download size={15} /> Receipt
-            </button>
-            <button onClick={reset} className="btn-primary flex-1">
-              Add More
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Full-screen success animation auto-dismisses; no button */}
+      <PaymentSuccessOverlay
+        open={successOpen}
+        title="Payment successful"
+        subtitle={txResult?.ref ? `Ref: ${txResult.ref}` : undefined}
+        amountText={txResult?.amount ? fmt.currency(txResult.amount) : undefined}
+        onClose={() => { setSuccessOpen(false); reset(); }}
+      />
 
       {/* Failed */}
       {step === "failed" && (

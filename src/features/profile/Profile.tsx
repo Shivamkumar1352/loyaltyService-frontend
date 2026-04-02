@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Camera, Upload, CheckCircle, Clock, XCircle, AlertCircle } from 'lucide-react'
+import { Upload, CheckCircle, Clock, XCircle, AlertCircle } from 'lucide-react'
 import { userAPI, kycAPI } from '../../core/api'
 import { useAuthStore } from '../../store'
 import { fmt } from '../../shared/utils'
@@ -31,7 +31,7 @@ export default function Profile() {
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm()
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true)
     try {
       const [p, k] = await Promise.allSettled([userAPI.getProfile(), kycAPI.getStatus()])
@@ -42,9 +42,9 @@ export default function Profile() {
       }
       if (k.status === 'fulfilled') setKycStatus(k.value.data?.data)
     } finally { setLoading(false) }
-  }
+  }, [reset])
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [load])
 
   const onSaveProfile = async (data) => {
     setSaving(true)

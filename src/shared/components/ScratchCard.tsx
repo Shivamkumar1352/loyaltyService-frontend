@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useCallback, useRef, useEffect, useState } from 'react';
 import { Sparkles, Shield } from 'lucide-react';
 
 const ScratchCard = ({ 
@@ -16,8 +16,8 @@ const ScratchCard = ({
   const [autoRedeemTriggered, setAutoRedeemTriggered] = useState(false);
   const [redemptionSuccess, setRedemptionSuccess] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
+  const [isScratching, setIsScratching] = useState(false);
   const [lastPosition, setLastPosition] = useState(null);
-  const [redemptionData, setRedemptionData] = useState(null);
 
   // Check if user meets tier requirement
   const meetsTierRequirement = () => {
@@ -30,33 +30,7 @@ const ScratchCard = ({
     return userTierLevel >= requiredTierLevel;
   };
 
-  // Initialize canvas
-  useEffect(() => {
-    if (!isOpen || !canvasRef.current) return;
-
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    ctxRef.current = ctx;
-    
-    // Set canvas size - larger square
-    const size = Math.min(window.innerWidth - 48, 340);
-    canvas.width = size;
-    canvas.height = size;
-    
-    // Draw scratch layer
-    drawScratchLayer();
-    
-    // Reset states when modal opens
-    setIsRevealed(false);
-    setScratchProgress(0);
-    setAutoRedeemTriggered(false);
-    setRedemptionSuccess(false);
-    setLastPosition(null);
-    setRedemptionData(null);
-    
-  }, [isOpen, reward, userTier]);
-
-  const drawScratchLayer = () => {
+  const drawScratchLayer = useCallback(() => {
     const canvas = canvasRef.current;
     const ctx = ctxRef.current;
     if (!ctx) return;
@@ -108,7 +82,32 @@ const ScratchCard = ({
       );
       ctx.fill();
     }
-  };
+  }, []);
+
+  // Initialize canvas
+  useEffect(() => {
+    if (!isOpen || !canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    ctxRef.current = ctx;
+
+    // Set canvas size - larger square
+    const size = Math.min(window.innerWidth - 48, 340);
+    canvas.width = size;
+    canvas.height = size;
+
+    // Draw scratch layer
+    drawScratchLayer();
+
+    // Reset states when modal opens
+    setIsRevealed(false);
+    setScratchProgress(0);
+    setAutoRedeemTriggered(false);
+    setRedemptionSuccess(false);
+    setLastPosition(null);
+
+  }, [drawScratchLayer, isOpen, reward, userTier]);
 
   const scratch = (x, y) => {
     const canvas = canvasRef.current;
@@ -181,7 +180,7 @@ const ScratchCard = ({
 
   const handleMouseMove = (e) => {
     e.preventDefault();
-    if (!isHovering || isRevealed || !meetsTierRequirement()) return;
+    if ((!isHovering && !isScratching) || isRevealed || !meetsTierRequirement()) return;
     
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX;
@@ -201,6 +200,23 @@ const ScratchCard = ({
 
   const handleMouseLeave = () => {
     setIsHovering(false);
+    setIsScratching(false);
+    setLastPosition(null);
+  };
+
+  const handlePointerDown = (e) => {
+    if (isRevealed || !meetsTierRequirement()) return;
+    setIsScratching(true);
+    scratch(e.clientX, e.clientY);
+  };
+
+  const handlePointerMove = (e) => {
+    if (!isScratching || isRevealed || !meetsTierRequirement()) return;
+    scratch(e.clientX, e.clientY);
+  };
+
+  const handlePointerUp = () => {
+    setIsScratching(false);
     setLastPosition(null);
   };
 
@@ -354,11 +370,9 @@ const ScratchCard = ({
       const cashbackAmount = response?.data?.cashbackAmount || response?.cashbackAmount;
       
       if (cashbackAmount) {
-        setRedemptionData({ cashbackAmount });
         setRedemptionSuccess(true);
         
         // Update canvas to show reward details
-        const canvas = canvasRef.current;
         const ctx = ctxRef.current;
         if (ctx) {
           drawRewardDetails(cashbackAmount);
@@ -373,7 +387,6 @@ const ScratchCard = ({
       } else {
         // Fallback if no cashback amount
         setRedemptionSuccess(true);
-        const canvas = canvasRef.current;
         const ctx = ctxRef.current;
         if (ctx) {
           drawRewardDetails(reward?.pointsRequired || 0);
@@ -457,6 +470,10 @@ const ScratchCard = ({
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
                 onMouseMove={handleMouseMove}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerUp}
                 style={{ 
                   touchAction: 'none', 
                   width: '100%', 
@@ -491,7 +508,7 @@ const ScratchCard = ({
             {!isRevealed && scratchProgress === 0 && canScratch && (
               <div className="mt-4 text-center">
                 <p className="text-xs text-white/60">
-                  💫 Simply hover your mouse over the card to scratch
+                  💫 Hover or drag your finger/mouse to scratch
                 </p>
               </div>
             )}
