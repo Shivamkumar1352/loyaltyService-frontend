@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Gift, Star, Tag, Zap, CheckCircle } from 'lucide-react'
 import { rewardsAPI } from '../../core/api'
 import { fmt } from '../../shared/utils'
-import { Skeleton, Modal, Badge,  } from '../../shared/components'
+import { Skeleton, Modal, Badge } from '../../shared/components'
 import ScratchCard from '../../shared/components/ScratchCard'
 import toast from 'react-hot-toast'
 
@@ -27,9 +27,9 @@ export default function Rewards() {
   const [redeemPoints, setRedeemPoints] = useState('')
   const [redeeming, setRedeeming] = useState(false)
   const [tab, setTab] = useState('catalog')
-  const [scratchCardOpen, setScratchCardOpen] = useState(false);
-const [selectedReward, setSelectedReward] = useState(null);
-const [isRedeemingScratch, setIsRedeemingScratch] = useState(false);
+  const [scratchCardOpen, setScratchCardOpen] = useState(false)
+  const [selectedReward, setSelectedReward] = useState(null)
+  const [isRedeemingScratch, setIsRedeemingScratch] = useState(false)
 
   const load = async (pageNumber = 0) => {
     setLoading(true)
@@ -72,37 +72,33 @@ const [isRedeemingScratch, setIsRedeemingScratch] = useState(false);
   }
 
   const handleScratchComplete = async (reward) => {
-  setIsRedeemingScratch(true);
-  try {
-    // API only expects rewardId - auto redeem happens here
-    const response = await rewardsAPI.redeem({ rewardId: reward.id });
-    
-    // Show toast with cashback amount
-    const cashbackAmount = response?.data?.data?.cashbackAmount || response?.data?.cashbackAmount;
-    if (cashbackAmount) {
-      toast.success(`🎉 You got ₹${cashbackAmount} cashback!`, {
-        icon: '💰',
-        duration: 3000,
-      });
-    } else {
-      toast.success(`🎉 Successfully redeemed: ${reward.name}!`, {
-        icon: '🎁',
-        duration: 3000,
-      });
+    setIsRedeemingScratch(true)
+    try {
+      const response = await rewardsAPI.redeem({ rewardId: reward.id })
+      const cashbackAmount = response?.data?.data?.cashbackAmount || response?.data?.cashbackAmount
+
+      if (cashbackAmount) {
+        toast.success(`🎉 You got ₹${cashbackAmount} cashback!`, {
+          icon: '💰',
+          duration: 3000,
+        })
+      } else {
+        toast.success(`🎉 Successfully redeemed: ${reward.name}!`, {
+          icon: '🎁',
+          duration: 3000,
+        })
+      }
+
+      await load()
+      return response?.data?.data || response?.data
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Redemption failed')
+      setScratchCardOpen(false)
+      throw err
+    } finally {
+      setIsRedeemingScratch(false)
     }
-    
-    await load(); // Reload data to update points balance
-    
-    // Return the response data so ScratchCard can extract cashback amount
-    return response?.data?.data || response?.data;
-  } catch (err) {
-    toast.error(err.response?.data?.message || 'Redemption failed');
-    setScratchCardOpen(false); // Close on error
-    throw err; // Re-throw to let ScratchCard handle error
-  } finally {
-    setIsRedeemingScratch(false);
   }
-};
 
   const handleRedeemPoints = async () => {
     if (!redeemPoints || Number(redeemPoints) < 1) {

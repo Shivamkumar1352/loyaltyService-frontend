@@ -1,6 +1,5 @@
-// ScratchCard.jsx - Shows cashback amount from API response
 import React, { useRef, useEffect, useState } from 'react';
-import { Sparkles, Gift, Zap, CheckCircle, Award, Shield, Coins } from 'lucide-react';
+import { Sparkles, Shield } from 'lucide-react';
 
 const ScratchCard = ({ 
   isOpen, 
@@ -10,8 +9,8 @@ const ScratchCard = ({
   isRedeeming,
   userTier 
 }) => {
-  const canvasRef = useRef(null);
-  const ctxRef = useRef(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   const [scratchProgress, setScratchProgress] = useState(0);
   const [isRevealed, setIsRevealed] = useState(false);
   const [autoRedeemTriggered, setAutoRedeemTriggered] = useState(false);
@@ -512,7 +511,7 @@ const ScratchCard = ({
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes fade-in {
           from {
             opacity: 0;

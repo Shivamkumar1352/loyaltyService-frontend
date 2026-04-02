@@ -1,51 +1,99 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Search, UserX, UserCheck, Shield, RefreshCw, ChevronDown } from 'lucide-react'
+import { Search, UserX, UserCheck, Shield, RefreshCw, Mail, Phone, CheckCircle2, XCircle } from 'lucide-react'
 import { adminAPI } from '../../core/api'
-import { fmt, statusClass } from '../../shared/utils'
+import { fmt } from '../../shared/utils'
 import { Badge, Pagination, Modal, Table } from '../../shared/components'
 import toast from 'react-hot-toast'
 
 const ROLES = ['USER', 'ADMIN', 'MERCHANT']
 const KYC_STATUSES = ['APPROVED', 'PENDING', 'REJECTED', 'NOT_SUBMITTED']
+const SEARCH_MODES = [
+  { value: 'all', label: 'All Fields' },
+  { value: 'email', label: 'Email' },
+  { value: 'phone', label: 'Phone' },
+]
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState({ current: 0, total: 0 })
   const [search, setSearch] = useState('')
+  const [searchMode, setSearchMode] = useState('all')
   const [filters, setFilters] = useState({ status: '', kycStatus: '' })
   const [selectedUser, setSelectedUser] = useState(null)
+  const [selectedUserLoading, setSelectedUserLoading] = useState(false)
   const [roleModal, setRoleModal] = useState(null)
   const [newRole, setNewRole] = useState('')
+  const [kycRejectModal, setKycRejectModal] = useState(null)
+  const [kycRejectReason, setKycRejectReason] = useState('')
+  const [rewardingKyc, setRewardingKyc] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
+
+  const getPageData = (payload) => payload?.data || payload
+
+  const getUsersFromResponse = (payload) => {
+    const data = getPageData(payload)
+    if (Array.isArray(data)) {
+      return { content: data, number: 0, totalPages: 1 }
+    }
+    if (Array.isArray(data?.content)) {
+      return data
+    }
+    if (data) {
+      return { content: [data], number: 0, totalPages: 1 }
+    }
+    return { content: [], number: 0, totalPages: 0 }
+  }
 
   const load = useCallback(async (pageNum = 0) => {
     setLoading(true)
     try {
       let res
       if (search.trim()) {
-        res = await adminAPI.searchUsers(search.trim(), pageNum)
+        if (searchMode === 'email') {
+          res = await adminAPI.searchByEmail(search.trim())
+        } else if (searchMode === 'phone') {
+          res = await adminAPI.searchByPhone(search.trim())
+        } else {
+          res = await adminAPI.searchUsers(search.trim(), pageNum)
+        }
       } else if (filters.kycStatus) {
         res = await adminAPI.searchByKyc(filters.kycStatus, pageNum)
       } else {
         res = await adminAPI.listUsers({ page: pageNum, size: 20, status: filters.status || undefined })
       }
-      const data = res.data?.data || res.data
-      setUsers(data?.content || [])
-      setPage({ current: data?.number || 0, total: data?.totalPages || 0 })
+      const data = getUsersFromResponse(res.data)
+      setUsers(data.content || [])
+      setPage({ current: data.number || 0, total: data.totalPages || 0 })
     } finally { setLoading(false) }
-  }, [search, filters])
+  }, [search, searchMode, filters])
 
   useEffect(() => {
     const t = setTimeout(() => load(0), 300)
     return () => clearTimeout(t)
   }, [load])
 
+  const openUserDetails = async (row) => {
+    setSelectedUser(row)
+    setSelectedUserLoading(true)
+    try {
+      const res = await adminAPI.getUser(row.id)
+      setSelectedUser(res.data?.data || res.data || row)
+    } catch {
+      toast.error('Failed to load latest user details')
+    } finally {
+      setSelectedUserLoading(false)
+    }
+  }
+
   const blockUser = async (userId) => {
     setActionLoading(true)
     try {
       await adminAPI.blockUser(userId)
       toast.success('User blocked')
+      if (selectedUser?.id === userId) {
+        setSelectedUser((prev) => prev ? { ...prev, status: 'BLOCKED' } : prev)
+      }
       load(page.current)
     } catch { toast.error('Failed') }
     finally { setActionLoading(false) }
@@ -56,6 +104,9 @@ export default function AdminUsers() {
     try {
       await adminAPI.unblockUser(userId)
       toast.success('User unblocked')
+      if (selectedUser?.id === userId) {
+        setSelectedUser((prev) => prev ? { ...prev, status: 'ACTIVE' } : prev)
+      }
       load(page.current)
     } catch { toast.error('Failed') }
     finally { setActionLoading(false) }
@@ -67,16 +118,53 @@ export default function AdminUsers() {
     try {
       await adminAPI.changeRole(roleModal.id, newRole)
       toast.success(`Role changed to ${newRole}`)
+      if (selectedUser?.id === roleModal.id) {
+        setSelectedUser((prev) => prev ? { ...prev, role: newRole } : prev)
+      }
       setRoleModal(null)
       load(page.current)
     } catch { toast.error('Failed') }
     finally { setActionLoading(false) }
   }
 
+  const approveUserKyc = async (userId) => {
+    setRewardingKyc(true)
+    try {
+      await adminAPI.approveKycByUser(userId)
+      toast.success('KYC approved')
+      setSelectedUser((prev) => prev ? { ...prev, kycStatus: 'APPROVED' } : prev)
+      load(page.current)
+    } catch {
+      toast.error('Failed to approve KYC')
+    } finally {
+      setRewardingKyc(false)
+    }
+  }
+
+  const rejectUserKyc = async () => {
+    if (!kycRejectModal?.id || !kycRejectReason.trim()) {
+      toast.error('Enter a rejection reason')
+      return
+    }
+    setRewardingKyc(true)
+    try {
+      await adminAPI.rejectKycByUser(kycRejectModal.id, kycRejectReason.trim())
+      toast.success('KYC rejected')
+      setSelectedUser((prev) => prev ? { ...prev, kycStatus: 'REJECTED' } : prev)
+      setKycRejectModal(null)
+      setKycRejectReason('')
+      load(page.current)
+    } catch {
+      toast.error('Failed to reject KYC')
+    } finally {
+      setRewardingKyc(false)
+    }
+  }
+
   const columns = [
     { key: 'id',    label: 'ID',    render: (v) => <span className="font-mono text-xs">#{v}</span> },
     { key: 'name',  label: 'Name',  render: (v, row) => (
-        <button onClick={() => setSelectedUser(row)} className="text-left hover:underline font-semibold text-sm"
+        <button onClick={() => openUserDetails(row)} className="text-left hover:underline font-semibold text-sm"
           style={{ color: 'var(--brand)' }}>
           {v || '—'}
         </button>
@@ -128,6 +216,10 @@ export default function AdminUsers() {
             value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <select className="input-field py-2.5 text-sm w-auto"
+          value={searchMode} onChange={e => setSearchMode(e.target.value)}>
+          {SEARCH_MODES.map((mode) => <option key={mode.value} value={mode.value}>{mode.label}</option>)}
+        </select>
+        <select className="input-field py-2.5 text-sm w-auto"
           value={filters.status} onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}>
           <option value="">All Statuses</option>
           {['ACTIVE','BLOCKED'].map(s => <option key={s}>{s}</option>)}
@@ -156,6 +248,9 @@ export default function AdminUsers() {
                 <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{selectedUser.email}</p>
               </div>
             </div>
+            {selectedUserLoading && (
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Refreshing latest user details…</p>
+            )}
             <div className="grid grid-cols-2 gap-3 text-sm">
               {[
                 ['User ID', `#${selectedUser.id}`],
@@ -172,6 +267,55 @@ export default function AdminUsers() {
                 </div>
               ))}
             </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                onClick={() => window.open(`mailto:${selectedUser.email}`, '_self')}
+                className="btn-secondary text-sm"
+              >
+                <Mail size={14} /> Email User
+              </button>
+              <button
+                onClick={() => window.open(`tel:${selectedUser.phone}`, '_self')}
+                className="btn-secondary text-sm"
+                disabled={!selectedUser.phone}
+              >
+                <Phone size={14} /> Call User
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {selectedUser.status === 'BLOCKED' ? (
+                <button onClick={() => unblockUser(selectedUser.id)} disabled={actionLoading} className="btn-secondary text-green-500">
+                  <UserCheck size={14} /> Unblock User
+                </button>
+              ) : (
+                <button onClick={() => blockUser(selectedUser.id)} disabled={actionLoading} className="btn-secondary text-red-400">
+                  <UserX size={14} /> Block User
+                </button>
+              )}
+              <button onClick={() => { setRoleModal(selectedUser); setNewRole(selectedUser.role) }} className="btn-secondary">
+                <Shield size={14} /> Change Role
+              </button>
+            </div>
+            {selectedUser.kycStatus === 'PENDING' && (
+              <div className="rounded-xl p-4 space-y-3" style={{ background: 'var(--bg-tertiary)' }}>
+                <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Pending KYC Actions</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button onClick={() => approveUserKyc(selectedUser.id)} disabled={rewardingKyc} className="btn-primary">
+                    <CheckCircle2 size={14} /> {rewardingKyc ? 'Approving…' : 'Approve KYC'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setKycRejectModal(selectedUser)
+                      setKycRejectReason('')
+                    }}
+                    disabled={rewardingKyc}
+                    className="btn-secondary text-red-400"
+                  >
+                    <XCircle size={14} /> Reject KYC
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </Modal>
@@ -203,6 +347,28 @@ export default function AdminUsers() {
               <button onClick={changeRole} disabled={actionLoading} className="btn-primary flex-1"
                 style={{ background: '#7c3aed' }}>
                 {actionLoading ? 'Saving…' : 'Change Role'}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal open={!!kycRejectModal} onClose={() => setKycRejectModal(null)} title="Reject User KYC">
+        {kycRejectModal && (
+          <div className="space-y-4">
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              Reject KYC for <strong style={{ color: 'var(--text-primary)' }}>{kycRejectModal.name}</strong>
+            </p>
+            <textarea
+              className="input-field resize-none h-24"
+              placeholder="Reason for rejection"
+              value={kycRejectReason}
+              onChange={(e) => setKycRejectReason(e.target.value)}
+            />
+            <div className="flex gap-3">
+              <button onClick={() => setKycRejectModal(null)} className="btn-secondary flex-1">Cancel</button>
+              <button onClick={rejectUserKyc} disabled={rewardingKyc || !kycRejectReason.trim()} className="btn-primary flex-1 bg-red-500 hover:bg-red-600" style={{ background: '#ef4444' }}>
+                {rewardingKyc ? 'Rejecting…' : 'Reject KYC'}
               </button>
             </div>
           </div>

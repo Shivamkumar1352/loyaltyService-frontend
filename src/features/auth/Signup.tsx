@@ -26,26 +26,25 @@ export default function Signup() {
         phone: data.phone,
         password: data.password,
       })
-      // setEmail(data.email)
-      // await authAPI.sendOtp({ email: data.email })
-      toast.success('Account created! Please log in.')
-      navigate('/login')
-      // setStep('verify')
+      setEmail(data.email)
+      await authAPI.sendOtp({ email: data.email })
+      toast.success('Account created. Verify your email to continue.')
+      setStep('verify')
     } catch (err) {
       toast.error(err.response?.data?.message || 'Signup failed')
     } finally { setLoading(false) }
   }
 
-  // const onVerify = async (data) => {
-  //   setLoading(true)
-  //   try {
-  //     await authAPI.verifyOtp({ email, otp: data.otp })
-  //     toast.success('Email verified! Please log in.')
-  //     navigate('/login')
-  //   } catch (err) {
-  //     toast.error(err.response?.data?.message || 'Invalid OTP')
-  //   } finally { setLoading(false) }
-  // }
+  const onVerify = async (data) => {
+    setLoading(true)
+    try {
+      await authAPI.verifyOtp({ email, otp: data.otp })
+      toast.success('Email verified! Please log in.')
+      navigate('/login')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Invalid OTP')
+    } finally { setLoading(false) }
+  }
 
   return (
     <div className="min-h-screen flex" style={{ background: 'var(--bg-primary)' }}>

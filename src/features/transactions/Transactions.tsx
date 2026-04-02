@@ -21,6 +21,8 @@ export default function Transactions() {
   const [showFilters, setShowFilters] = useState(false)
   const [statementDates, setStatementDates] = useState({ from: '', to: '' })
   const [showStatement, setShowStatement] = useState(false)
+  const [statementPreview, setStatementPreview] = useState([])
+  const [statementLoading, setStatementLoading] = useState(false)
   const [disputeModal, setDisputeModal] = useState(null)
 
   const loadTxns = useCallback(async (page = 0) => {
@@ -58,6 +60,20 @@ export default function Transactions() {
       toast.success('Statement downloaded')
       setShowStatement(false)
     } catch { toast.error('Failed to download') }
+  }
+
+  const previewStatement = async () => {
+    if (!statementDates.from || !statementDates.to) return toast.error('Select date range')
+    setStatementLoading(true)
+    try {
+      const res = await walletAPI.getStatement(statementDates.from, statementDates.to)
+      const data = res.data?.data || res.data
+      setStatementPreview(Array.isArray(data) ? data : data?.content || [])
+    } catch {
+      toast.error('Failed to load statement preview')
+    } finally {
+      setStatementLoading(false)
+    }
   }
 
   const txnColumns = [
@@ -180,7 +196,7 @@ export default function Transactions() {
       )}
 
       {/* Export modal */}
-      <Modal open={showStatement} onClose={() => setShowStatement(false)} title="Export Statement">
+      <Modal open={showStatement} onClose={() => setShowStatement(false)} title="Export Statement" size="lg">
         <div className="space-y-4">
           <div>
             <label className="label">From Date</label>
@@ -194,10 +210,43 @@ export default function Transactions() {
           </div>
           <div className="flex gap-3">
             <button onClick={() => setShowStatement(false)} className="btn-secondary flex-1">Cancel</button>
+            <button onClick={previewStatement} disabled={statementLoading} className="btn-secondary flex-1">
+              {statementLoading ? 'Loading…' : 'Preview'}
+            </button>
             <button onClick={downloadStatement} className="btn-primary flex-1">
               <FileText size={14} /> Download CSV
             </button>
           </div>
+          {(statementLoading || statementPreview.length > 0) && (
+            <div className="rounded-xl border p-3 space-y-3" style={{ borderColor: 'var(--border)', background: 'var(--bg-tertiary)' }}>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Statement Preview</p>
+                {!statementLoading && (
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{statementPreview.length} entries</p>
+                )}
+              </div>
+              {statementLoading ? (
+                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading statement entries…</p>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {statementPreview.map((entry, index) => (
+                    <div key={entry.id || entry.referenceId || index} className="flex items-center justify-between rounded-lg px-3 py-2" style={{ background: 'var(--bg-secondary)' }}>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{entry.description || entry.type || 'Statement entry'}</p>
+                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{fmt.datetime(entry.createdAt || entry.transactionDate)}</p>
+                      </div>
+                      <span className="text-sm font-bold" style={{ color: entry.type === 'DEBIT' ? '#ef4444' : 'var(--brand)' }}>
+                        {fmt.currency(entry.amount)}
+                      </span>
+                    </div>
+                  ))}
+                  {statementPreview.length === 0 && (
+                    <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No entries found for this range.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </Modal>
 

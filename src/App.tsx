@@ -1,21 +1,21 @@
 import { lazy, Suspense, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useThemeStore, useAuthStore } from './store'
-import AppLayout from './layouts/AppLayout.jsx'
-import AdminLayout from './layouts/AdminLayout.jsx'
+import AppLayout from './layouts/AppLayout'
+import AdminLayout from './layouts/AdminLayout'
 
-const Login       = lazy(() => import('./features/auth/Login.jsx'))
-const Signup      = lazy(() => import('./features/auth/Signup.jsx'))
-const ForgotPwd   = lazy(() => import('./features/auth/ForgotPassword.jsx'))
-const Dashboard   = lazy(() => import('./features/dashboard/Dashboard.jsx'))
-const AddMoney    = lazy(() => import('./features/wallet/AddMoney.jsx'))
-const Transfer    = lazy(() => import('./features/wallet/Transfer.jsx'))
-const Rewards     = lazy(() => import('./features/rewards/Rewards.jsx'))
-const Transactions= lazy(() => import('./features/transactions/Transactions.jsx'))
-const Profile     = lazy(() => import('./features/profile/Profile.jsx'))
-const AdminDash   = lazy(() => import('./features/admin/AdminDashboard.jsx'))
-const AdminUsers  = lazy(() => import('./features/admin/AdminUsers.jsx'))
-const AdminKyc    = lazy(() => import('./features/admin/AdminKyc.jsx'))
+const Login = lazy(() => import('./features/auth/Login'))
+const Signup = lazy(() => import('./features/auth/Signup'))
+const ForgotPwd = lazy(() => import('./features/auth/ForgotPassword'))
+const Dashboard = lazy(() => import('./features/dashboard/Dashboard'))
+const AddMoney = lazy(() => import('./features/wallet/AddMoney'))
+const Transfer = lazy(() => import('./features/wallet/Transfer'))
+const Rewards = lazy(() => import('./features/rewards/Rewards'))
+const Transactions = lazy(() => import('./features/transactions/Transactions'))
+const Profile = lazy(() => import('./features/profile/Profile'))
+const AdminDash = lazy(() => import('./features/admin/AdminDashboard'))
+const AdminUsers = lazy(() => import('./features/admin/AdminUsers'))
+const AdminKyc = lazy(() => import('./features/admin/AdminKyc'))
 
 function Loader() {
   return (
@@ -25,14 +25,14 @@ function Loader() {
   )
 }
 
-function ProtectedRoute({ children, adminOnly = false }) {
+function ProtectedRoute({ children, adminOnly = false }: { children: JSX.Element; adminOnly?: boolean }) {
   const { isAuthenticated, user } = useAuthStore()
   if (!isAuthenticated) return <Navigate to="/login" replace />
   if (adminOnly && user?.role !== 'ADMIN') return <Navigate to="/dashboard" replace />
   return children
 }
 
-function PublicRoute({ children }) {
+function PublicRoute({ children }: { children: JSX.Element }) {
   const { isAuthenticated } = useAuthStore()
   if (isAuthenticated) return <Navigate to="/dashboard" replace />
   return children

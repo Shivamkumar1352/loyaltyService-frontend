@@ -1,7 +1,33 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-export const useThemeStore = create(
+type ThemeState = {
+  isDark: boolean
+  toggle: () => void
+  init: () => void
+}
+
+type AuthUser = {
+  id?: string | number
+  role?: string
+  email?: string
+  fullName?: string
+  name?: string
+  phone?: string
+}
+
+type AuthState = {
+  user: AuthUser | null
+  accessToken: string | null
+  refreshToken: string | null
+  isAuthenticated: boolean
+  setAuth: (user: AuthUser | null, accessToken: string | null, refreshToken: string | null) => void
+  setTokens: (accessToken: string | null, refreshToken?: string | null) => void
+  logout: () => void
+  updateToken: (accessToken: string | null) => void
+}
+
+export const useThemeStore = create<ThemeState>()(
   persist(
     (set) => ({
       isDark: false,
@@ -22,15 +48,21 @@ export const useThemeStore = create(
   )
 )
 
-export const useAuthStore = create(
+export const useAuthStore = create<AuthState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       user: null,
       accessToken: null,
       refreshToken: null,
       isAuthenticated: false,
       setAuth: (user, accessToken, refreshToken) =>
         set({ user, accessToken, refreshToken, isAuthenticated: true }),
+      setTokens: (accessToken, refreshToken) =>
+        set((state) => ({
+          accessToken,
+          refreshToken: refreshToken === undefined ? state.refreshToken : refreshToken,
+          isAuthenticated: Boolean(accessToken && (refreshToken === undefined ? state.refreshToken : refreshToken)),
+        })),
       logout: () =>
         set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false }),
       updateToken: (accessToken) => set({ accessToken }),

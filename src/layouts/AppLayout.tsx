@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Plus, ArrowLeftRight, Gift, History,
-  User, HelpCircle, Sun, Moon, Menu, X, LogOut, ShieldCheck
+  User, Sun, Moon, Menu, X, LogOut, ShieldCheck
 } from 'lucide-react'
 import { useThemeStore, useAuthStore } from '../store'
 import { authAPI } from '../core/api'

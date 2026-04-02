@@ -12,8 +12,8 @@ const adminNav = [
 
 export default function AdminLayout() {
   const [sideOpen, setSideOpen] = useState(false)
-  const { isDark, toggle } = useThemeStore()
-  const { user } = useAuthStore()
+  const { isDark, toggle }: any = useThemeStore()
+  const { user }: any = useAuthStore()
 
   return (
     <div className="h-screen flex overflow-hidden" style={{ background: 'var(--bg-primary)' }}>

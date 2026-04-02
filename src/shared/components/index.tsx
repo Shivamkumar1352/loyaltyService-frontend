@@ -1,18 +1,25 @@
+import { ReactNode } from 'react'
 import { cn, statusClass } from '../utils'
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
-export function Skeleton({ className }) {
+export function Skeleton({ className }: { className?: string }) {
   return <div className={cn('shimmer-line', className)} />
 }
 
 // ─── Badge ────────────────────────────────────────────────────────────────────
-export function Badge({ status, label }) {
+export function Badge({ status, label }: { status?: string; label?: string }) {
   const cls = statusClass[status] || 'badge-muted'
   return <span className={cn('badge', cls)}>{label ?? status}</span>
 }
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
-export function Modal({ open, onClose, title, children, size = 'md' }) {
+export function Modal({ open, onClose, title, children, size = 'md' }: {
+  open: boolean
+  onClose: () => void
+  title?: string
+  children: ReactNode
+  size?: 'sm' | 'md' | 'lg' | 'xl'
+}) {
   if (!open) return null
   const widths = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-lg', xl: 'max-w-2xl' }
   return (
@@ -32,7 +39,12 @@ export function Modal({ open, onClose, title, children, size = 'md' }) {
 }
 
 // ─── Empty State ─────────────────────────────────────────────────────────────
-export function EmptyState({ icon, title, desc, action }) {
+export function EmptyState({ icon, title, desc, action }: {
+  icon?: ReactNode
+  title: string
+  desc?: string
+  action?: ReactNode
+}) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       {icon && <div className="text-5xl mb-4 opacity-30">{icon}</div>}
@@ -44,7 +56,13 @@ export function EmptyState({ icon, title, desc, action }) {
 }
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
-export function StatCard({ label, value, sub, icon, trend, loading }) {
+export function StatCard({ label, value, sub, icon, loading }: {
+  label: string
+  value: ReactNode
+  sub?: ReactNode
+  icon?: ReactNode
+  loading?: boolean
+}) {
   return (
     <div className="card p-5">
       <div className="flex items-start justify-between mb-3">
@@ -61,7 +79,11 @@ export function StatCard({ label, value, sub, icon, trend, loading }) {
 }
 
 // ─── Pagination ───────────────────────────────────────────────────────────────
-export function Pagination({ page, totalPages, onChange }) {
+export function Pagination({ page, totalPages, onChange }: {
+  page: number
+  totalPages: number
+  onChange: (page: number) => void
+}) {
   if (totalPages <= 1) return null
   return (
     <div className="flex items-center justify-center gap-2 pt-4">
@@ -75,7 +97,12 @@ export function Pagination({ page, totalPages, onChange }) {
 }
 
 // ─── Table ────────────────────────────────────────────────────────────────────
-export function Table({ columns, data, loading, emptyText = 'No data' }) {
+export function Table({ columns, data, loading, emptyText = 'No data' }: {
+  columns: Array<{ key: string; label: ReactNode; render?: (value: any, row: any) => ReactNode }>
+  data: any[]
+  loading?: boolean
+  emptyText?: string
+}) {
   return (
     <div className="overflow-x-auto rounded-xl" style={{ border: '1px solid var(--border)' }}>
       <table className="w-full text-sm">

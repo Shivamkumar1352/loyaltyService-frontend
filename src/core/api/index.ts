@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { useAuthStore } from '../../store'
 
 const BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:8080'
 
@@ -8,21 +9,70 @@ const api = axios.create({
   timeout: 15000,
 })
 
+let refreshRequest = null
+
+function getAuthState() {
+  return useAuthStore.getState()
+}
+
+function clearAuthAndRedirect() {
+  getAuthState().logout()
+  if (window.location.pathname !== '/login') {
+    window.location.href = '/login'
+  }
+}
+
+function getRefreshPayload(data) {
+  return data?.data ?? data
+}
+
+async function refreshAccessToken() {
+  if (!refreshRequest) {
+    const { refreshToken, setTokens } = getAuthState()
+
+    if (!refreshToken) {
+      throw new Error('Missing refresh token')
+    }
+
+    refreshRequest = axios
+      .post(`${BASE_URL}/api/auth/refresh`, { refreshToken }, {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 15000,
+      })
+      .then((response) => {
+        const payload = getRefreshPayload(response.data)
+        const nextAccessToken = payload?.accessToken
+        const nextRefreshToken = payload?.refreshToken
+
+        if (!nextAccessToken) {
+          throw new Error('Refresh endpoint did not return an access token')
+        }
+
+        setTokens(nextAccessToken, nextRefreshToken ?? refreshToken)
+        return nextAccessToken
+      })
+      .finally(() => {
+        refreshRequest = null
+      })
+  }
+
+  return refreshRequest
+}
+
 // Request interceptor — attach JWT
 api.interceptors.request.use(
   (config) => {
     try {
-      const stored = JSON.parse(localStorage.getItem('auth-storage') || '{}')
-      const token = stored?.state?.accessToken
+      const { accessToken: token, user } = getAuthState()
       if (token) config.headers.Authorization = `Bearer ${token}`
-      const userId = stored?.state?.user?.id
+      const userId = user?.id
       if (userId) config.headers['X-User-Id'] = userId
-      const role = stored?.state?.user?.role
+      const role = user?.role
       if (role) {
         config.headers['X-UserRole'] = role
         config.headers['X-User-Role'] = role
       }
-      const email = stored?.state?.user?.email
+      const email = user?.email
       if (email) config.headers['X-UserEmail'] = email
     } catch {}
     return config
@@ -35,29 +85,23 @@ api.interceptors.response.use(
   (res) => res,
   async (err) => {
     const original = err.config
-    if (err.response?.status === 401 && !original._retry) {
+    const requestUrl = original?.url || ''
+    const isRefreshRequest = requestUrl.includes('/api/auth/refresh')
+    const isLogoutRequest = requestUrl.includes('/api/auth/logout')
+
+    if (err.response?.status === 401 && original && !original._retry && !isRefreshRequest && !isLogoutRequest) {
       original._retry = true
+
       try {
-        const stored = JSON.parse(localStorage.getItem('auth-storage') || '{}')
-        const refreshToken = stored?.state?.refreshToken
-        if (refreshToken) {
-          const res = await axios.post(`${BASE_URL}/api/auth/refresh`, { refreshToken })
-          const { accessToken } = res.data
-          // update store
-          const authState = JSON.parse(localStorage.getItem('auth-storage') || '{}')
-          if (authState.state) {
-            authState.state.accessToken = accessToken
-            localStorage.setItem('auth-storage', JSON.stringify(authState))
-          }
-          original.headers.Authorization = `Bearer ${accessToken}`
-          return api(original)
-        }
+        const accessToken = await refreshAccessToken()
+        original.headers = original.headers ?? {}
+        original.headers.Authorization = `Bearer ${accessToken}`
+        return api(original)
       } catch {
-        localStorage.removeItem('auth-storage')
-        window.location.href = '/login'
+        clearAuthAndRedirect()
       }
     }
-    const msg = err.response?.data?.message || err.message || 'Something went wrong'
+
     return Promise.reject(err)
   }
 )
@@ -119,7 +163,7 @@ export const rewardsAPI = {
 export const adminAPI = {
   getDashboard:   () => api.get('/api/admin/dashboard'),
   listUsers:      (params) => api.get('/api/admin/users', { params }),
-  getUser:        (id) => api.get(`/api/admin/users/${id}`),
+  getUser:       (id) => api.get(`/api/admin/users/${id}`),
   searchUsers:    (q, page = 0) => api.get(`/api/admin/users/search?q=${q}&page=${page}`),
   searchByEmail:  (email) => api.get(`/api/admin/users/search/email?email=${email}`),
   searchByPhone:  (phone) => api.get(`/api/admin/users/search/phone?phone=${phone}`),
