@@ -30,6 +30,25 @@ function getRefreshPayload(data) {
   return data?.data ?? data
 }
 
+/** Full request URL as axios will send it (baseURL may be empty in dev → relative /api/...). */
+function getRequestUrl(config) {
+  if (!config) return ''
+  const u = config.url || ''
+  const b = config.baseURL || ''
+  try {
+    if (u.startsWith('http')) return u
+    return `${b}${u}`
+  } catch {
+    return `${b}${u}`
+  }
+}
+
+function isAuthRefreshRequest(config) {
+  const url = config?.url || ''
+  const full = getRequestUrl(config)
+  return url.includes('/api/auth/refresh') || full.includes('/api/auth/refresh')
+}
+
 async function refreshAccessToken() {
   if (!refreshRequest) {
     const { refreshToken, setTokens } = getAuthState()
@@ -38,11 +57,10 @@ async function refreshAccessToken() {
       throw new Error('Missing refresh token')
     }
 
-    refreshRequest = api
-      .post('/api/auth/refresh', { refreshToken }, {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 15000,
-      })
+    refreshRequest = api.post('/api/auth/refresh', { refreshToken }, {
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 15000,
+    })
       .then((response) => {
         const payload = getRefreshPayload(response.data)
         const nextAccessToken = payload?.accessToken
@@ -63,10 +81,18 @@ async function refreshAccessToken() {
   return refreshRequest
 }
 
-// Request interceptor — attach JWT
+// Request interceptor — attach JWT (never on refresh: expired Bearer can make gateways reject the call)
 api.interceptors.request.use(
   (config) => {
     try {
+      if (isAuthRefreshRequest(config)) {
+        delete config.headers?.Authorization
+        delete config.headers?.['X-User-Id']
+        delete config.headers?.['X-UserRole']
+        delete config.headers?.['X-User-Role']
+        delete config.headers?.['X-UserEmail']
+        return config
+      }
       const { accessToken: token, user } = getAuthState()
       if (token) config.headers.Authorization = `Bearer ${token}`
       const userId = user?.id
@@ -99,9 +125,10 @@ api.interceptors.response.use(
     }
 
     const original = err.config
-    const requestUrl = original?.url || ''
-    const isRefreshRequest = requestUrl.includes('/api/auth/refresh')
-    const isLogoutRequest = requestUrl.includes('/api/auth/logout')
+    const isRefreshRequest = isAuthRefreshRequest(original)
+    const isLogoutRequest =
+      (original?.url || '').includes('/api/auth/logout') ||
+      getRequestUrl(original).includes('/api/auth/logout')
 
     if (err.response?.status === 401 && original && !original._retry && !isRefreshRequest && !isLogoutRequest) {
       original._retry = true
@@ -111,8 +138,9 @@ api.interceptors.response.use(
         original.headers = original.headers ?? {}
         original.headers.Authorization = `Bearer ${accessToken}`
         return api(original)
-      } catch {
+      } catch (refreshErr) {
         clearAuthAndRedirect()
+        return Promise.reject(refreshErr)
       }
     }
 

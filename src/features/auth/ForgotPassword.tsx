@@ -80,7 +80,11 @@ export default function ForgotPassword() {
           <form onSubmit={hs1(sendOtp)} className="space-y-4">
             <div>
               <label className="label">Email address</label>
-              <input className="input-field" type="email" placeholder="you@example.com"
+              <input
+                className="input-field"
+                type="email"
+                placeholder="you@example.com"
+                title="Enter the email linked to your account"
                 {...r1('email', { required: 'Email required' })} />
               {e1.email && <p className="text-xs text-red-500 mt-1">{e1.email.message}</p>}
             </div>
@@ -94,8 +98,11 @@ export default function ForgotPassword() {
           <form onSubmit={hs2(verifyOtp)} className="space-y-4">
             <div>
               <label className="label">One-Time Password</label>
-              <input className="input-field text-center text-2xl font-mono tracking-widest"
-                maxLength={8} placeholder="······"
+              <input
+                className="input-field text-center text-2xl font-mono tracking-widest"
+                maxLength={8}
+                placeholder="······"
+                title="Enter the OTP sent to your email"
                 {...r2('otp', { required: 'OTP required' })} />
               {e2.otp && <p className="text-xs text-red-500 mt-1">{e2.otp.message}</p>}
             </div>
@@ -114,14 +121,23 @@ export default function ForgotPassword() {
             <div>
               <label className="label">New Password</label>
               <div className="relative">
-                <input className="input-field pr-10" type={showPwd ? 'text' : 'password'} placeholder="Min 8 chars"
+                <input
+                  className="input-field pr-10"
+                  type={showPwd ? 'text' : 'password'}
+                  placeholder="Min 8 chars"
+                  title="Enter your new password"
                   {...r3('newPassword', {
                     required: 'Required',
                     minLength: { value: 8, message: 'Min 8 chars' },
                     pattern: { value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/, message: 'Need upper, lower, number & symbol' }
                   })} />
-                <button type="button" onClick={() => setShowPwd(!showPwd)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100">
+                <button
+                  type="button"
+                  onClick={() => setShowPwd(!showPwd)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100"
+                  title={showPwd ? 'Hide password' : 'Show password'}
+                  aria-label={showPwd ? 'Hide password' : 'Show password'}
+                >
                   {showPwd ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
@@ -129,7 +145,11 @@ export default function ForgotPassword() {
             </div>
             <div>
               <label className="label">Confirm New Password</label>
-              <input className="input-field" type="password" placeholder="Re-enter"
+              <input
+                className="input-field"
+                type="password"
+                placeholder="Re-enter"
+                title="Re-enter your new password"
                 {...r3('confirm', { required: 'Required', validate: v => v === w3('newPassword') || 'Passwords do not match' })} />
               {e3.confirm && <p className="text-xs text-red-500 mt-1">{e3.confirm.message}</p>}
             </div>

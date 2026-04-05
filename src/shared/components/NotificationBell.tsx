@@ -45,6 +45,7 @@ export default function NotificationBell() {
         onClick={() => setOpen((v) => !v)}
         className="btn-ghost p-2 rounded-xl relative"
         aria-label="Notifications"
+        title="Notifications"
       >
         <Bell size={17} />
         {unreadCount > 0 && (

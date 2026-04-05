@@ -20,7 +20,6 @@ import {
 } from 'recharts'
 import toast from 'react-hot-toast'
 
-const COLORS = ['#16b36e', '#3b82f6', '#f59e0b', '#ef4444']
 const REWARD_TYPES = ['CASHBACK', 'COUPON', 'VOUCHER']
 const REWARD_TIERS = ['', 'SILVER', 'GOLD', 'PLATINUM']
 
@@ -124,10 +123,19 @@ export default function AdminDashboard() {
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Platform overview and KPIs</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setAddRewardOpen(true)} className="btn-secondary text-sm">
+          <button
+            onClick={() => setAddRewardOpen(true)}
+            className="btn-secondary text-sm"
+            title="Add new reward item"
+          >
             <Gift size={14} /> Add Reward
           </button>
-          <button onClick={load} className="btn-ghost p-2 rounded-xl">
+          <button
+            onClick={load}
+            className="btn-ghost p-2 rounded-xl"
+            title="Refresh dashboard data"
+            aria-label="Refresh dashboard data"
+          >
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
           </button>
         </div>

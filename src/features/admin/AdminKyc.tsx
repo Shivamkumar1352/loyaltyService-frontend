@@ -65,7 +65,12 @@ export default function AdminKyc() {
             {!loading && <span className="ml-2 badge badge-warning">{pendingKyc.length} pending</span>}
           </p>
         </div>
-        <button onClick={() => load(page.current)} className="btn-ghost p-2 rounded-xl">
+        <button
+          onClick={() => load(page.current)}
+          className="btn-ghost p-2 rounded-xl"
+          title="Refresh KYC queue"
+          aria-label="Refresh KYC queue"
+        >
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>

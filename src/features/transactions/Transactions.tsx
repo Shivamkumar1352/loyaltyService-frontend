@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Download, Filter, FileText, AlertTriangle, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
 import { walletAPI } from '../../core/api'
+import { useAuthStore } from '../../store' // ← adjust to your auth hook path
 import { fmt } from '../../shared/utils'
 import { Badge, Pagination, Table, Modal } from '../../shared/components'
 import toast from 'react-hot-toast'
@@ -11,6 +12,8 @@ const TX_TYPE_COLORS = {
 }
 
 export default function Transactions() {
+  const { user } = useAuthStore() // ← pull real logged-in user
+
   const [tab, setTab] = useState('txns') // 'txns' | 'ledger'
   const [txns, setTxns] = useState([])
   const [ledger, setLedger] = useState([])
@@ -24,6 +27,12 @@ export default function Transactions() {
   const [statementPreview, setStatementPreview] = useState([])
   const [statementLoading, setStatementLoading] = useState(false)
   const [disputeModal, setDisputeModal] = useState(null)
+
+  const isCredit = (row) =>
+      row.type === 'TOPUP' ||
+      row.type === 'CASHBACK' ||
+      row.type === 'REDEEM' ||
+      (row.type === 'TRANSFER' && row.receiverId === user?.id)
 
   const loadTxns = useCallback(async (page = 0) => {
     setLoading(true)
@@ -80,203 +89,275 @@ export default function Transactions() {
   }
 
   const txnColumns = [
-    { key: 'type', label: 'Type', render: (v) => (
-        <div className="flex items-center gap-2">
-          <span className={`text-xs ${['TOPUP','CASHBACK','REDEEM'].includes(v) ? '' : ''}`}>
-            {['TOPUP','CASHBACK','REDEEM'].includes(v)
-              ? <ArrowDownLeft size={13} className="text-green-500" />
-              : <ArrowUpRight size={13} className="text-red-400" />
-            }
-          </span>
-          <span className={`text-xs font-semibold ${TX_TYPE_COLORS[v] || ''}`}>{v}</span>
-        </div>
-      )
+    {
+      key: 'type',
+      label: 'Type',
+      render: (v, row) => {
+        const credit = isCredit(row)
+        return (
+            <div className="flex items-center gap-2">
+              {credit
+                  ? <ArrowDownLeft size={13} className="text-green-500" />
+                  : <ArrowUpRight size={13} className="text-red-400" />
+              }
+              <span className={`text-xs font-semibold ${credit ? 'text-green-500' : TX_TYPE_COLORS[v] || ''}`}>
+              {v === 'TRANSFER' ? (credit ? 'RECEIVED' : 'SENT') : v}
+            </span>
+            </div>
+        )
+      }
     },
-    { key: 'amount', label: 'Amount', render: (v, row) => (
-        <span className={`font-bold text-sm ${['TOPUP','CASHBACK','REDEEM'].includes(row.type) ? 'text-green-500' : 'text-red-400'}`}>
-          {['TOPUP','CASHBACK','REDEEM'].includes(row.type) ? '+' : '−'}{fmt.currency(v)}
-        </span>
-      )
+    {
+      key: 'amount',
+      label: 'Amount',
+      render: (v, row) => {
+        const credit = isCredit(row)
+        return (
+            <div>
+            <span className={`font-bold text-sm ${credit ? 'text-green-500' : 'text-red-400'}`}>
+              {credit ? '+' : '−'}{fmt.currency(v)}
+            </span>
+              {row.type === 'TRANSFER' && (
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                    {credit
+                        ? `From: #${row.senderId ?? '—'}`
+                        : `To: #${row.receiverId ?? '—'}`
+                    }
+                  </p>
+              )}
+            </div>
+        )
+      }
     },
-    { key: 'status', label: 'Status', render: (v) => <Badge status={v} /> },
-    { key: 'description', label: 'Description', render: (v) => <span className="text-xs truncate max-w-[140px] block">{v || '—'}</span> },
-    { key: 'createdAt', label: 'Date', render: (v) => <span className="text-xs whitespace-nowrap">{fmt.datetime(v)}</span> },
-    { key: 'id', label: '', render: (v, row) => (
-        row.status === 'FAILED' || row.status === 'REVERSED'
-          ? <button onClick={() => setDisputeModal(row)} className="btn-ghost text-xs px-2 py-1 text-orange-500">
-              <AlertTriangle size={12} /> Dispute
-            </button>
-          : null
+    {
+      key: 'status',
+      label: 'Status',
+      render: (v) => <Badge status={v} />
+    },
+    {
+      key: 'description',
+      label: 'Description',
+      render: (v) => <span className="text-xs truncate max-w-[140px] block">{v || '—'}</span>
+    },
+    {
+      key: 'createdAt',
+      label: 'Date',
+      render: (v) => <span className="text-xs whitespace-nowrap">{fmt.datetime(v)}</span>
+    },
+    {
+      key: 'id',
+      label: '',
+      render: (v, row) => (
+          row.status === 'FAILED' || row.status === 'REVERSED'
+              ? <button onClick={() => setDisputeModal(row)} className="btn-ghost text-xs px-2 py-1 text-orange-500">
+                <AlertTriangle size={12} /> Dispute
+              </button>
+              : null
       )
     },
   ]
 
   const ledgerColumns = [
-    { key: 'type', label: 'Type', render: (v) => (
-        <span className={`badge ${v === 'CREDIT' ? 'badge-success' : 'badge-danger'}`}>{v}</span>
+    {
+      key: 'type',
+      label: 'Type',
+      render: (v) => (
+          <span className={`badge ${v === 'CREDIT' ? 'badge-success' : 'badge-danger'}`}>{v}</span>
       )
     },
-    { key: 'amount', label: 'Amount', render: (v, row) => (
-        <span className={`font-bold text-sm ${row.type === 'CREDIT' ? 'text-green-500' : 'text-red-400'}`}>
+    {
+      key: 'amount',
+      label: 'Amount',
+      render: (v, row) => (
+          <span className={`font-bold text-sm ${row.type === 'CREDIT' ? 'text-green-500' : 'text-red-400'}`}>
           {row.type === 'CREDIT' ? '+' : '−'}{fmt.currency(v)}
         </span>
       )
     },
-    { key: 'description', label: 'Description', render: (v) => <span className="text-xs">{v || '—'}</span> },
-    { key: 'referenceId', label: 'Reference', render: (v) => <span className="text-xs font-mono">{v || '—'}</span> },
-    { key: 'createdAt', label: 'Date', render: (v) => <span className="text-xs whitespace-nowrap">{fmt.datetime(v)}</span> },
+    {
+      key: 'description',
+      label: 'Description',
+      render: (v) => <span className="text-xs">{v || '—'}</span>
+    },
+    {
+      key: 'referenceId',
+      label: 'Reference',
+      render: (v) => <span className="text-xs font-mono">{v || '—'}</span>
+    },
+    {
+      key: 'createdAt',
+      label: 'Date',
+      render: (v) => <span className="text-xs whitespace-nowrap">{fmt.datetime(v)}</span>
+    },
   ]
 
   return (
-    <div className="space-y-6 animate-slide-up">
-      <div className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>Transaction History</h1>
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>All your wallet activity in one place</p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => setShowFilters(!showFilters)} className="btn-secondary text-sm">
-            <Filter size={14} /> Filters
-          </button>
-          <button onClick={() => setShowStatement(true)} className="btn-secondary text-sm">
-            <Download size={14} /> Export
-          </button>
-        </div>
-      </div>
-
-      {/* Filters */}
-      {showFilters && (
-        <div className="card p-4 flex flex-wrap gap-4 animate-slide-up">
+      <div className="space-y-6 animate-slide-up">
+        <div className="flex items-start justify-between flex-wrap gap-3">
           <div>
-            <label className="label">Type</label>
-            <select className="input-field py-2 text-sm"
-              value={filters.type} onChange={e => setFilters(f => ({ ...f, type: e.target.value }))}>
-              <option value="">All Types</option>
-              {['TOPUP','TRANSFER','WITHDRAW','CASHBACK','REDEEM'].map(t => <option key={t}>{t}</option>)}
-            </select>
+            <h1 className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>Transaction History</h1>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>All your wallet activity in one place</p>
           </div>
-          <div>
-            <label className="label">Status</label>
-            <select className="input-field py-2 text-sm"
-              value={filters.status} onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}>
-              <option value="">All Statuses</option>
-              {['PENDING','SUCCESS','FAILED','REVERSED'].map(s => <option key={s}>{s}</option>)}
-            </select>
-          </div>
-          <div className="flex items-end">
-            <button onClick={() => { setFilters({ type: '', status: '' }); setShowFilters(false) }}
-              className="btn-ghost text-sm">Clear</button>
-          </div>
-        </div>
-      )}
-
-      {/* Tabs */}
-      <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--bg-tertiary)' }}>
-        {[['txns', 'Transactions'], ['ledger', 'Ledger']].map(([val, label]) => (
-          <button key={val} onClick={() => setTab(val)}
-            className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
-            style={tab === val
-              ? { background: 'var(--bg-secondary)', color: 'var(--text-primary)', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }
-              : { color: 'var(--text-muted)' }
-            }>
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'txns' && (
-        <>
-          <Table columns={txnColumns} data={txns} loading={loading} emptyText="No transactions found" />
-          <Pagination page={txPage.current} totalPages={txPage.total} onChange={(p) => loadTxns(p)} />
-        </>
-      )}
-
-      {tab === 'ledger' && (
-        <>
-          <Table columns={ledgerColumns} data={ledger} loading={loading} emptyText="No ledger entries found" />
-          <Pagination page={ledgerPage.current} totalPages={ledgerPage.total} onChange={(p) => loadLedger(p)} />
-        </>
-      )}
-
-      {/* Export modal */}
-      <Modal open={showStatement} onClose={() => setShowStatement(false)} title="Export Statement" size="lg">
-        <div className="space-y-4">
-          <div>
-            <label className="label">From Date</label>
-            <input type="date" className="input-field"
-              value={statementDates.from} onChange={e => setStatementDates(d => ({ ...d, from: e.target.value }))} />
-          </div>
-          <div>
-            <label className="label">To Date</label>
-            <input type="date" className="input-field"
-              value={statementDates.to} onChange={e => setStatementDates(d => ({ ...d, to: e.target.value }))} />
-          </div>
-          <div className="flex gap-3">
-            <button onClick={() => setShowStatement(false)} className="btn-secondary flex-1">Cancel</button>
-            <button onClick={previewStatement} disabled={statementLoading} className="btn-secondary flex-1">
-              {statementLoading ? 'Loading…' : 'Preview'}
+          <div className="flex gap-2">
+            <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="btn-secondary text-sm"
+                title="Show or hide transaction filters"
+            >
+              <Filter size={14} /> Filters
             </button>
-            <button onClick={downloadStatement} className="btn-primary flex-1">
-              <FileText size={14} /> Download CSV
+            <button
+                onClick={() => setShowStatement(true)}
+                className="btn-secondary text-sm"
+                title="Export transactions as CSV statement"
+            >
+              <Download size={14} /> Export
             </button>
           </div>
-          {(statementLoading || statementPreview.length > 0) && (
-            <div className="rounded-xl border p-3 space-y-3" style={{ borderColor: 'var(--border)', background: 'var(--bg-tertiary)' }}>
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Statement Preview</p>
-                {!statementLoading && (
-                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{statementPreview.length} entries</p>
-                )}
+        </div>
+
+        {/* Filters */}
+        {showFilters && (
+            <div className="card p-4 flex flex-wrap gap-4 animate-slide-up">
+              <div>
+                <label className="label">Type</label>
+                <select className="input-field py-2 text-sm"
+                        value={filters.type} onChange={e => setFilters(f => ({ ...f, type: e.target.value }))}>
+                  <option value="">All Types</option>
+                  {['TOPUP', 'TRANSFER', 'WITHDRAW', 'CASHBACK', 'REDEEM'].map(t => <option key={t}>{t}</option>)}
+                </select>
               </div>
-              {statementLoading ? (
-                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading statement entries…</p>
-              ) : (
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {statementPreview.map((entry, index) => (
-                    <div key={entry.id || entry.referenceId || index} className="flex items-center justify-between rounded-lg px-3 py-2" style={{ background: 'var(--bg-secondary)' }}>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{entry.description || entry.type || 'Statement entry'}</p>
-                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{fmt.datetime(entry.createdAt || entry.transactionDate)}</p>
-                      </div>
-                      <span className="text-sm font-bold" style={{ color: entry.type === 'DEBIT' ? '#ef4444' : 'var(--brand)' }}>
+              <div>
+                <label className="label">Status</label>
+                <select className="input-field py-2 text-sm"
+                        value={filters.status} onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}>
+                  <option value="">All Statuses</option>
+                  {['PENDING', 'SUCCESS', 'FAILED', 'REVERSED'].map(s => <option key={s}>{s}</option>)}
+                </select>
+              </div>
+              <div className="flex items-end">
+                <button onClick={() => { setFilters({ type: '', status: '' }); setShowFilters(false) }}
+                        className="btn-ghost text-sm">Clear</button>
+              </div>
+            </div>
+        )}
+
+        {/* Tabs */}
+        <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--bg-tertiary)' }}>
+          {[['txns', 'Transactions'], ['ledger', 'Ledger']].map(([val, label]) => (
+              <button key={val} onClick={() => setTab(val)}
+                      className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
+                      style={tab === val
+                          ? { background: 'var(--bg-secondary)', color: 'var(--text-primary)', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }
+                          : { color: 'var(--text-muted)' }
+                      }>
+                {label}
+              </button>
+          ))}
+        </div>
+
+        {tab === 'txns' && (
+            <>
+              <Table columns={txnColumns} data={txns} loading={loading} emptyText="No transactions found" />
+              <Pagination page={txPage.current} totalPages={txPage.total} onChange={(p) => loadTxns(p)} />
+            </>
+        )}
+
+        {tab === 'ledger' && (
+            <>
+              <Table columns={ledgerColumns} data={ledger} loading={loading} emptyText="No ledger entries found" />
+              <Pagination page={ledgerPage.current} totalPages={ledgerPage.total} onChange={(p) => loadLedger(p)} />
+            </>
+        )}
+
+        {/* Export modal */}
+        <Modal open={showStatement} onClose={() => setShowStatement(false)} title="Export Statement" size="lg">
+          <div className="space-y-4">
+            <div>
+              <label className="label">From Date</label>
+              <input
+                  type="date"
+                  className="input-field"
+                  title="Select start date for statement"
+                  value={statementDates.from} onChange={e => setStatementDates(d => ({ ...d, from: e.target.value }))} />
+            </div>
+            <div>
+              <label className="label">To Date</label>
+              <input
+                  type="date"
+                  className="input-field"
+                  title="Select end date for statement"
+                  value={statementDates.to} onChange={e => setStatementDates(d => ({ ...d, to: e.target.value }))} />
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setShowStatement(false)} className="btn-secondary flex-1">Cancel</button>
+              <button onClick={previewStatement} disabled={statementLoading} className="btn-secondary flex-1">
+                {statementLoading ? 'Loading…' : 'Preview'}
+              </button>
+              <button onClick={downloadStatement} className="btn-primary flex-1">
+                <FileText size={14} /> Download CSV
+              </button>
+            </div>
+            {(statementLoading || statementPreview.length > 0) && (
+                <div className="rounded-xl border p-3 space-y-3" style={{ borderColor: 'var(--border)', background: 'var(--bg-tertiary)' }}>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Statement Preview</p>
+                    {!statementLoading && (
+                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{statementPreview.length} entries</p>
+                    )}
+                  </div>
+                  {statementLoading ? (
+                      <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading statement entries…</p>
+                  ) : (
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {statementPreview.map((entry, index) => (
+                            <div key={entry.id || entry.referenceId || index} className="flex items-center justify-between rounded-lg px-3 py-2" style={{ background: 'var(--bg-secondary)' }}>
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{entry.description || entry.type || 'Statement entry'}</p>
+                                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{fmt.datetime(entry.createdAt || entry.transactionDate)}</p>
+                              </div>
+                              <span className="text-sm font-bold" style={{ color: entry.type === 'DEBIT' ? '#ef4444' : 'var(--brand)' }}>
                         {fmt.currency(entry.amount)}
                       </span>
-                    </div>
-                  ))}
-                  {statementPreview.length === 0 && (
-                    <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No entries found for this range.</p>
+                            </div>
+                        ))}
+                        {statementPreview.length === 0 && (
+                            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No entries found for this range.</p>
+                        )}
+                      </div>
                   )}
                 </div>
-              )}
-            </div>
-          )}
-        </div>
-      </Modal>
+            )}
+          </div>
+        </Modal>
 
-      {/* Dispute modal */}
-      <Modal open={!!disputeModal} onClose={() => setDisputeModal(null)} title="Raise Dispute">
-        <div className="space-y-4">
-          <div className="rounded-xl p-4" style={{ background: 'var(--bg-tertiary)' }}>
-            <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Transaction #{disputeModal?.id}</p>
-            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-              {disputeModal?.type} · {fmt.currency(disputeModal?.amount)} · <Badge status={disputeModal?.status} />
+        {/* Dispute modal */}
+        <Modal open={!!disputeModal} onClose={() => setDisputeModal(null)} title="Raise Dispute">
+          <div className="space-y-4">
+            <div className="rounded-xl p-4" style={{ background: 'var(--bg-tertiary)' }}>
+              <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Transaction #{disputeModal?.id}</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                {disputeModal?.type} · {fmt.currency(disputeModal?.amount)} · <Badge status={disputeModal?.status} />
+              </p>
+            </div>
+            <div>
+              <label className="label">Reason</label>
+              <textarea className="input-field resize-none h-24" placeholder="Describe your issue…" />
+            </div>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              Our support team will review your dispute within 2–3 business days.
             </p>
+            <div className="flex gap-3">
+              <button onClick={() => setDisputeModal(null)} className="btn-secondary flex-1">Cancel</button>
+              <button
+                  onClick={() => { toast.success("Dispute raised! We'll reach out soon."); setDisputeModal(null) }}
+                  className="btn-primary flex-1"
+              >
+                Submit Dispute
+              </button>
+            </div>
           </div>
-          <div>
-            <label className="label">Reason</label>
-            <textarea className="input-field resize-none h-24" placeholder="Describe your issue…" />
-          </div>
-          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-            Our support team will review your dispute within 2–3 business days.
-          </p>
-          <div className="flex gap-3">
-            <button onClick={() => setDisputeModal(null)} className="btn-secondary flex-1">Cancel</button>
-            <button onClick={() => { toast.success('Dispute raised! We\'ll reach out soon.'); setDisputeModal(null) }} className="btn-primary flex-1">
-              Submit Dispute
-            </button>
-          </div>
-        </div>
-      </Modal>
-    </div>
+        </Modal>
+      </div>
   )
 }

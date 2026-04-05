@@ -4,7 +4,6 @@ import { rewardsAPI } from '../../core/api'
 import { fmt } from '../../shared/utils'
 import { Skeleton, Modal } from '../../shared/components'
 import ScratchCard from '../../shared/components/ScratchCard'
-import PaymentSuccessOverlay from '../../shared/components/PaymentSuccessOverlay'
 import toast from 'react-hot-toast'
 import { useNotificationStore } from '../../store'
 
@@ -31,7 +30,6 @@ export default function Rewards() {
   const [scratchCardOpen, setScratchCardOpen] = useState(false)
   const [selectedReward, setSelectedReward] = useState(null)
   const [isRedeemingScratch, setIsRedeemingScratch] = useState(false)
-  const [creditFlash, setCreditFlash] = useState<{ title: string; amountText?: string; subtitle?: string } | null>(null)
   const addNtf = useNotificationStore((s) => s.add)
 
   const load = useCallback(async (pageNumber = 0) => {
@@ -67,23 +65,31 @@ export default function Rewards() {
       const response = await rewardsAPI.redeem({ rewardId: reward.id })
       const cashbackAmount = response?.data?.data?.cashbackAmount || response?.data?.cashbackAmount
 
-      addNtf({
-        title: cashbackAmount ? 'Cashback received' : 'Reward redeemed',
-        message: cashbackAmount
-          ? `You received ${fmt.currency(cashbackAmount)} from rewards`
-          : `Redeemed: ${reward.name}`,
-        severity: 'success',
-        href: '/transactions',
-      })
+      if (cashbackAmount) {
+        toast.success(`🎉 You got ₹${cashbackAmount} cashback!`, {
+          icon: '💰',
+          duration: 3000,
+        })
+        addNtf({
+          title: 'Cashback received',
+          message: `You received ₹${cashbackAmount} from rewards`,
+          severity: 'success',
+          href: '/transactions',
+        })
+      } else {
+        toast.success(`🎉 Successfully redeemed: ${reward.name}!`, {
+          icon: '🎁',
+          duration: 3000,
+        })
+        addNtf({
+          title: 'Reward redeemed',
+          message: `Redeemed: ${reward.name}`,
+          severity: 'success',
+          href: '/rewards',
+        })
+      }
 
       await load()
-      setScratchCardOpen(false)
-      setSelectedReward(null)
-      setCreditFlash({
-        title: cashbackAmount ? 'Cashback credited' : 'Reward redeemed',
-        amountText: cashbackAmount ? fmt.currency(cashbackAmount) : undefined,
-        subtitle: reward?.name ? String(reward.name) : undefined,
-      })
       return response?.data?.data || response?.data
     } catch (err) {
       toast.error(err.response?.data?.message || 'Redemption failed')
@@ -108,14 +114,9 @@ export default function Rewards() {
     setRedeeming(true)
     try {
       await rewardsAPI.redeemPoints(Number(redeemPoints))
-      const pts = Number(redeemPoints)
+      toast.success(`${redeemPoints} points redeemed as ₹${redeemPoints} wallet credit!`)
       setPointsModal(false)
       setRedeemPoints('')
-      setCreditFlash({
-        title: 'Wallet credited',
-        amountText: fmt.currency(pts),
-        subtitle: 'Points converted to wallet balance',
-      })
       load()
     } catch (err) {
       console.error('Redeem points error:', err)
@@ -347,26 +348,18 @@ export default function Rewards() {
         </div>
       )}
 
-      <ScratchCard
-        isOpen={scratchCardOpen}
-        onClose={() => {
-          setScratchCardOpen(false)
-          setSelectedReward(null)
-          setIsRedeemingScratch(false)
-        }}
-        reward={selectedReward}
-        onScratchComplete={handleScratchComplete}
-        isRedeeming={isRedeemingScratch}
-        userTier={summary?.tier}
-      />
-
-      <PaymentSuccessOverlay
-        open={creditFlash !== null}
-        title={creditFlash?.title ?? 'Success'}
-        amountText={creditFlash?.amountText}
-        subtitle={creditFlash?.subtitle}
-        onClose={() => setCreditFlash(null)}
-      />
+     <ScratchCard
+  isOpen={scratchCardOpen}
+  onClose={() => {
+    setScratchCardOpen(false);
+    setSelectedReward(null);
+    setIsRedeemingScratch(false);
+  }}
+  reward={selectedReward}
+  onScratchComplete={handleScratchComplete}
+  isRedeeming={isRedeemingScratch}
+  userTier={summary?.tier} // Pass the user's current tier
+/>
 
       {/* Convert points modal */}
       <Modal open={pointsModal} onClose={() => setPointsModal(false)} title="Convert Points to Cash">
@@ -384,6 +377,7 @@ export default function Rewards() {
               value={redeemPoints} 
               onChange={e => setRedeemPoints(e.target.value)}
               placeholder={`Max ${summary?.points}`}
+              title="Enter how many points you want to convert to wallet balance"
             />
           </div>
           {redeemPoints && Number(redeemPoints) > 0 && (

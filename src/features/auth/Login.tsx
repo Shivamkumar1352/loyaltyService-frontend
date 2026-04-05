@@ -109,7 +109,7 @@ export default function Login() {
             ))}
           </div>
         </div>
-        <p className="text-white/40 text-xs relative">© 2025 WalletPay. All rights reserved.</p>
+        <p className="text-white/40 text-xs relative">© 2026 WalletPay. All rights reserved.</p>
       </div>
 
       {/* Right panel */}
@@ -120,7 +120,12 @@ export default function Login() {
               <h2 className="font-black text-2xl mb-0.5" style={{ color: 'var(--text-primary)' }}>Sign in</h2>
               <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Welcome back to WalletPay</p>
             </div>
-            <button onClick={toggle} className="btn-ghost p-2 rounded-xl">
+            <button
+              onClick={toggle}
+              className="btn-ghost p-2 rounded-xl"
+              title="Toggle theme"
+              aria-label="Toggle theme"
+            >
               {isDark ? <Sun size={16} /> : <Moon size={16} />}
             </button>
           </div>
@@ -159,6 +164,7 @@ export default function Login() {
                     className="input-field pl-9"
                     placeholder="you@example.com or 9876543210"
                     autoComplete="username"
+                    title="Enter your registered email address or phone number"
                     {...register('identifier', { required: 'Email or phone required' })}
                   />
                   <Phone size={15} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-30" />
@@ -168,11 +174,20 @@ export default function Login() {
               <div>
                 <label className="label">Password</label>
                 <div className="relative">
-                  <input className="input-field pr-10" type={showPwd ? 'text' : 'password'} placeholder="••••••••"
+                  <input
+                    className="input-field pr-10"
+                    type={showPwd ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    title="Enter your account password"
                     autoComplete="current-password"
                     {...register('password', { required: 'Password required' })} />
-                  <button type="button" onClick={() => setShowPwd(!showPwd)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100">
+                  <button
+                    type="button"
+                    onClick={() => setShowPwd(!showPwd)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100"
+                    title={showPwd ? 'Hide password' : 'Show password'}
+                    aria-label={showPwd ? 'Hide password' : 'Show password'}
+                  >
                     {showPwd ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
@@ -192,15 +207,16 @@ export default function Login() {
               {otpStep === 'enter_id' ? (
                 <form onSubmit={handleSubmit(onSendOtp)} className="space-y-4">
                   <div>
-                    <label className="label">Email or phone</label>
+                    <label className="label">Email address</label>
                     <div className="relative">
                       <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 opacity-40" />
                       <input
                         className="input-field pl-9"
                         placeholder="you@example.com or 9876543210"
-                        {...register('identifier', { required: 'Email or phone required' })}
+                        title="Enter email or phone to receive OTP"
+                        {...register('identifier', { required: 'Email address required' })}
                       />
-                      <Phone size={15} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-30" />
+                      {/* <Phone size={15} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-30" /> */}
                     </div>
                     {errors.identifier && <p className="text-xs text-red-500 mt-1">{String(errors.identifier.message)}</p>}
                   </div>
@@ -220,6 +236,7 @@ export default function Login() {
                       className="input-field text-center text-2xl font-mono tracking-widest"
                       maxLength={8}
                       placeholder="······"
+                      title="Enter the OTP sent to your email or phone"
                       {...register('otp', { required: 'OTP required', minLength: { value: 4, message: 'Min 4 digits' } })}
                     />
                     {errors.otp && <p className="text-xs text-red-500 mt-1">{String(errors.otp.message)}</p>}

@@ -29,7 +29,14 @@ export function Modal({ open, onClose, title, children, size = 'md' }: {
         {title && (
           <div className="flex items-center justify-between mb-5">
             <h3 className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>{title}</h3>
-            <button onClick={onClose} className="btn-ghost rounded-lg p-1.5 text-lg leading-none">×</button>
+            <button
+              onClick={onClose}
+              className="btn-ghost rounded-lg p-1.5 text-lg leading-none"
+              aria-label="Close dialog"
+              title="Close dialog"
+            >
+              ×
+            </button>
           </div>
         )}
         {children}

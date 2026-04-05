@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { XCircle, CreditCard, Smartphone } from "lucide-react";
+import {
+  CheckCircle,
+  XCircle,
+  Download,
+  CreditCard,
+  Smartphone,
+} from "lucide-react";
 import { walletAPI } from "../../core/api";
 import { fmt } from "../../shared/utils";
 import toast from "react-hot-toast";
@@ -146,6 +152,17 @@ export default function AddMoney() {
     setTxResult(null);
   };
 
+  const downloadReceipt = () => {
+    const content = `WalletPay Receipt\n------------------\nAmount: ${fmt.currency(txResult?.amount)}\nStatus: ${txResult?.status}\nRef: ${txResult?.ref}\nDate: ${new Date().toLocaleString()}`;
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "receipt.txt";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="max-w-md mx-auto animate-slide-up">
       <div className="mb-6">
@@ -178,12 +195,47 @@ export default function AddMoney() {
         </div>
       )}
 
-      {/* Full-screen success animation auto-dismisses; no button */}
+      {/* Success */}
+      {step === "success" && (
+        <div className="card p-8 text-center animate-slide-up">
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+            style={{ background: "rgba(22,179,110,0.12)" }}
+          >
+            <CheckCircle size={32} className="text-green-500" />
+          </div>
+          <h2
+            className="text-xl font-black mb-1"
+            style={{ color: "var(--text-primary)" }}
+          >
+            Payment Successful
+          </h2>
+          <p
+            className="text-3xl font-black mb-1"
+            style={{ color: "var(--brand)" }}
+          >
+            {fmt.currency(txResult?.amount)}
+          </p>
+          <p className="text-xs mb-6" style={{ color: "var(--text-muted)" }}>
+            Ref: {txResult?.ref}
+          </p>
+          <div className="flex gap-3">
+            <button onClick={downloadReceipt} className="btn-secondary flex-1">
+              <Download size={15} /> Receipt
+            </button>
+            <button onClick={reset} className="btn-primary flex-1">
+              Add More
+            </button>
+          </div>
+        </div>
+      )}
+
       <PaymentSuccessOverlay
         open={successOpen}
         title="Payment successful"
         subtitle={txResult?.ref ? `Ref: ${txResult.ref}` : undefined}
         amountText={txResult?.amount ? fmt.currency(txResult.amount) : undefined}
+        primaryLabel="Back to Add Money"
         onClose={() => { setSuccessOpen(false); reset(); }}
       />
 
@@ -223,6 +275,7 @@ export default function AddMoney() {
               min="1"
               placeholder="0"
               value={amount}
+              title="Enter the amount you want to add"
               {...register("amount", {
                 required: "Amount required",
                 min: { value: 1, message: "Min ₹1" },
@@ -262,7 +315,8 @@ export default function AddMoney() {
                           border: "1px solid var(--border)",
                         }
                   }
-                >
+                    title={`Quick amount ₹${amt}`}
+                    >
                   ₹{amt}
                 </button>
               ))}

@@ -50,7 +50,12 @@ export default function Dashboard() {
             {user?.fullName?.split(' ')[0] || 'Friend'} 👋
           </h1>
         </div>
-        <button onClick={load} className="btn-ghost p-2 rounded-xl" title="Refresh">
+            <button
+              onClick={load}
+              className="btn-ghost p-2 rounded-xl"
+              title="Refresh dashboard data"
+              aria-label="Refresh dashboard data"
+            >
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>
@@ -70,7 +75,12 @@ export default function Dashboard() {
               <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/15">
                 {balance?.status || 'ACTIVE'}
               </span>
-              <button onClick={() => setBalanceVisible(!balanceVisible)} className="text-white/70 hover:text-white transition-colors">
+              <button
+                onClick={() => setBalanceVisible(!balanceVisible)}
+                className="text-white/70 hover:text-white transition-colors"
+                title={balanceVisible ? 'Hide balance' : 'Show balance'}
+                aria-label={balanceVisible ? 'Hide balance amount' : 'Show balance amount'}
+              >
                 {balanceVisible ? <Eye size={16} /> : <EyeOff size={16} />}
               </button>
             </div>

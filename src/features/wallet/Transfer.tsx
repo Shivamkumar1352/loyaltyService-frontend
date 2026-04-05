@@ -119,7 +119,11 @@ export default function Transfer() {
                   <label className="label">Recipient User ID</label>
                   <div className="relative">
                     <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 opacity-40" />
-                    <input className="input-field pl-9" type="number" placeholder="Enter user ID"
+                <input
+                  className="input-field pl-9"
+                  type="number"
+                  placeholder="Enter user ID"
+                  title="Enter the WalletPay User ID of the recipient"
                       {...register('receiverId', { required: 'Recipient ID required', min: { value: 1, message: 'Invalid ID' } })} />
                   </div>
                   {errors.receiverId && <p className="text-xs text-red-500 mt-1">{errors.receiverId.message}</p>}
@@ -127,14 +131,23 @@ export default function Transfer() {
               ) : (
                 <>
                   <label className="label">Withdrawal Note</label>
-                  <input className="input-field" placeholder="Optional note for this withdrawal"
+                  <input
+                    className="input-field"
+                    placeholder="Optional note for this withdrawal"
+                    title="Add an optional note for this withdrawal"
                     {...register('destination')} />
                 </>
               )}
             </div>
             <div>
               <label className="label">Amount (₹)</label>
-              <input className="input-field text-xl font-bold" type="number" min="1" max="25000" placeholder="0"
+              <input
+                className="input-field text-xl font-bold"
+                type="number"
+                min="1"
+                max="25000"
+                placeholder="0"
+                title="Enter transfer or withdrawal amount (max ₹25,000)"
                 {...register('amount', {
                   required: 'Amount required',
                   min: { value: 1, message: 'Min ₹1' },
@@ -147,7 +160,10 @@ export default function Transfer() {
             </div>
             <div>
               <label className="label">{mode === 'transfer' ? 'Note (optional)' : 'Description (optional)'}</label>
-              <input className="input-field" placeholder="What's it for?"
+              <input
+                className="input-field"
+                placeholder="What's it for?"
+                title="Optional note describing this transfer or withdrawal"
                 {...register('description', { maxLength: { value: 255, message: 'Max 255 chars' } })} />
             </div>
           </div>
@@ -196,12 +212,34 @@ export default function Transfer() {
         </div>
       )}
 
-      {/* Full-screen success animation auto-dismisses; no button */}
+      {/* Success */}
+      {step === 'success' && (
+        <div className="card p-8 text-center animate-slide-up">
+          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+            style={{ background: 'rgba(22,179,110,0.12)' }}>
+            <CheckCircle size={32} className="text-green-500" />
+          </div>
+          <h2 className="text-xl font-black mb-1" style={{ color: 'var(--text-primary)' }}>
+            {mode === 'transfer' ? 'Transfer Sent!' : 'Withdrawal Submitted!'}
+          </h2>
+          <p className="text-3xl font-black mb-1" style={{ color: 'var(--brand)' }}>{fmt.currency(result?.amount)}</p>
+          <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
+            {mode === 'transfer'
+              ? `Successfully sent to User #${result?.receiverId}`
+              : 'Your withdrawal request was submitted successfully'}
+          </p>
+          <button onClick={doReset} className="btn-primary w-full">
+            {mode === 'transfer' ? 'New Transfer' : 'New Withdrawal'}
+          </button>
+        </div>
+      )}
+
       <PaymentSuccessOverlay
         open={successOpen}
         title={mode === 'transfer' ? 'Transfer successful' : 'Withdrawal successful'}
         subtitle={mode === 'transfer' ? `Sent to User #${result?.receiverId}` : 'Money will reflect shortly'}
         amountText={result?.amount ? fmt.currency(result?.amount) : undefined}
+        primaryLabel="Back"
         onClose={() => { setSuccessOpen(false); doReset() }}
       />
 

@@ -57,7 +57,12 @@ export default function AppLayout() {
             </div>
             <span className="font-black text-lg tracking-tight" style={{ color: 'var(--text-primary)' }}>WalletPay</span>
           </div>
-          <button onClick={() => setSideOpen(false)} className="lg:hidden btn-ghost p-1.5 rounded-lg">
+          <button
+            onClick={() => setSideOpen(false)}
+            className="lg:hidden btn-ghost p-1.5 rounded-lg"
+            title="Close menu"
+            aria-label="Close menu"
+          >
             <X size={18} />
           </button>
         </div>
@@ -121,15 +126,23 @@ export default function AppLayout() {
         {/* Topbar */}
         <header className="sticky top-0 z-20 flex items-center justify-between px-4 lg:px-6 h-14"
           style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)' }}>
-          <button onClick={() => setSideOpen(true)} className="lg:hidden btn-ghost p-2 rounded-lg">
+          <button
+            onClick={() => setSideOpen(true)}
+            className="lg:hidden btn-ghost p-2 rounded-lg"
+            title="Open menu"
+            aria-label="Open menu"
+          >
             <Menu size={20} />
           </button>
           <div className="hidden lg:block" />
           <div className="flex items-center gap-2">
             <NotificationBell />
-            <button onClick={toggle}
+            <button
+              onClick={toggle}
               className="btn-ghost p-2 rounded-xl"
-              aria-label="Toggle theme">
+              aria-label="Toggle theme"
+              title="Toggle theme"
+            >
               {isDark ? <Sun size={17} /> : <Moon size={17} />}
             </button>
           </div>

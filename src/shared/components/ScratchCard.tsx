@@ -431,6 +431,8 @@ const ScratchCard = ({
               onClick={onClose}
               className="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors"
               disabled={isRedeeming}
+              aria-label="Close scratch card"
+              title="Close scratch card"
             >
               ✕
             </button>

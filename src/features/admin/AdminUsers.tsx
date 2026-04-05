@@ -207,8 +207,13 @@ export default function AdminUsers() {
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-48">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 opacity-40" />
-          <input className="input-field pl-9 py-2.5 text-sm" placeholder="Search name, email, phone…"
-            value={search} onChange={e => setSearch(e.target.value)} />
+          <input
+            className="input-field pl-9 py-2.5 text-sm"
+            placeholder="Search name, email, phone…"
+            title="Search by user name, email, or phone"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
         </div>
         <select className="input-field py-2.5 text-sm w-auto"
           value={searchMode} onChange={e => setSearchMode(e.target.value)}>

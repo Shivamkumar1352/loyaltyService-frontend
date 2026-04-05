@@ -133,18 +133,29 @@ export default function Profile() {
             <form onSubmit={handleSubmit(onSaveProfile)} className="space-y-4">
               <div>
                 <label className="label">Full Name</label>
-                <input className="input-field" {...register('name', { required: 'Required', minLength: { value: 2, message: 'Min 2 chars' } })} />
+                <input
+                  className="input-field"
+                  {...register('name', { required: 'Required', minLength: { value: 2, message: 'Min 2 chars' } })}
+                  title="Update your full name"
+                />
                 {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>}
               </div>
               <div>
                 <label className="label">Phone</label>
-                <input className="input-field" type="tel"
+                <input
+                  className="input-field"
+                  type="tel"
+                  title="Update your phone number"
                   {...register('phone', { required: 'Required', minLength: { value: 10, message: 'Min 10 digits' } })} />
                 {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone.message}</p>}
               </div>
               <div>
                 <label className="label">Email</label>
-                <input className="input-field opacity-60 cursor-not-allowed" value={profile?.email || ''} disabled />
+                <input
+                  className="input-field opacity-60 cursor-not-allowed"
+                  value={profile?.email || ''} disabled
+                  title="Email cannot be changed"
+                />
                 <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Email cannot be changed</p>
               </div>
               <div className="flex gap-3">
@@ -214,7 +225,10 @@ export default function Profile() {
               </div>
               <div>
                 <label className="label">Document Number</label>
-                <input className="input-field" placeholder="Enter document number"
+                <input
+                  className="input-field"
+                  placeholder="Enter document number"
+                  title="Enter the ID number printed on your document"
                   value={kycDocNum} onChange={e => setKycDocNum(e.target.value)} />
               </div>
               <div>
