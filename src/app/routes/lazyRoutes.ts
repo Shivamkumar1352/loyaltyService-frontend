@@ -1,0 +1,16 @@
+import { lazy } from 'react'
+
+export const Login = lazy(() => import('../../features/auth/Login'))
+export const Signup = lazy(() => import('../../features/auth/Signup'))
+export const ForgotPwd = lazy(() => import('../../features/auth/ForgotPassword'))
+export const Dashboard = lazy(() => import('../../features/dashboard/Dashboard'))
+export const AddMoney = lazy(() => import('../../features/wallet/AddMoney'))
+export const Transfer = lazy(() => import('../../features/wallet/Transfer'))
+export const Rewards = lazy(() => import('../../features/rewards/Rewards'))
+export const Transactions = lazy(() => import('../../features/transactions/Transactions'))
+export const Profile = lazy(() => import('../../features/profile/Profile'))
+export const Analytics = lazy(() => import('../../features/analytics/Analytics'))
+export const AdminDash = lazy(() => import('../../features/admin/AdminDashboard'))
+export const AdminUsers = lazy(() => import('../../features/admin/AdminUsers'))
+export const AdminKyc = lazy(() => import('../../features/admin/AdminKyc'))
+export const AdminRewards = lazy(() => import('../../features/admin/AdminRewards'))

@@ -1,38 +1,68 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { CheckCircle, XCircle, ArrowLeftRight, User } from 'lucide-react'
+import type { AxiosError } from 'axios'
+import toast from 'react-hot-toast'
 import { walletAPI } from '../../core/api'
 import { fmt } from '../../shared/utils'
 import PaymentSuccessOverlay from '../../shared/components/PaymentSuccessOverlay'
 import { useNotificationStore } from '../../store'
+import { useCooldown } from '../../shared/hooks/useCooldown'
+import { TransferConfirmCard } from './transfer/components/TransferConfirmCard'
+import { TransferForm } from './transfer/components/TransferForm'
+import { TransferModeToggle } from './transfer/components/TransferModeToggle'
+import { TransferStatusCard } from './transfer/components/TransferStatusCard'
+import { TransferStepIndicator } from './transfer/components/TransferStepIndicator'
+import type {
+  TransferFormData,
+  TransferMode,
+  TransferResult,
+  TransferStep,
+  WalletTransferPayload,
+  WalletWithdrawPayload,
+} from './transfer/types'
+
+const TRANSFER_ACTION_COOLDOWN_MS = 4000
 
 export default function Transfer() {
   const [loading, setLoading] = useState(false)
-  const [mode, setMode] = useState('transfer')
-  const [step, setStep] = useState('form') // 'form' | 'confirm' | 'success' | 'failed'
-  const [formData, setFormData] = useState(null)
-  const [result, setResult] = useState(null)
+  const [mode, setMode] = useState<TransferMode>('transfer')
+  const [step, setStep] = useState<TransferStep>('form')
+  const [formData, setFormData] = useState<TransferFormData | null>(null)
+  const [result, setResult] = useState<TransferResult | null>(null)
   const [successOpen, setSuccessOpen] = useState(false)
   const addNtf = useNotificationStore((s) => s.add)
-  const { register, handleSubmit, reset, formState: { errors } } = useForm()
+  const transferCooldown = useCooldown()
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<TransferFormData>()
 
-  const onReview = (data) => {
+  const onReview = (data: TransferFormData) => {
     setFormData(data)
     setStep('confirm')
   }
 
   const onConfirm = async () => {
+    if (!formData) return
+    if (transferCooldown.isCoolingDown) {
+      toast.error(`Please wait ${transferCooldown.remainingSeconds}s before trying again`)
+      return
+    }
+
+    transferCooldown.start(TRANSFER_ACTION_COOLDOWN_MS)
     setLoading(true)
     try {
-      const payload = {
+      const basePayload = {
         amount: Number(formData.amount),
         description: formData.description || '',
         idempotencyKey: `txn-${Date.now()}-${mode}`,
       }
+
       if (mode === 'transfer') {
-        payload.receiverId = Number(formData.receiverId)
+        const payload: WalletTransferPayload = {
+          ...basePayload,
+          receiverId: Number(formData.receiverId),
+        }
         await walletAPI.transfer(payload)
       } else {
+        const payload: WalletWithdrawPayload = basePayload
         await walletAPI.withdraw(payload)
       }
       setResult({ status: 'SUCCESS', ...formData })
@@ -47,7 +77,8 @@ export default function Transfer() {
         href: '/transactions',
       })
     } catch (err) {
-      setResult({ status: 'FAILED', error: err.response?.data?.message || (mode === 'transfer' ? 'Transfer failed' : 'Withdrawal failed') })
+      const error = err as AxiosError<{ message?: string }>
+      setResult({ status: 'FAILED', error: error.response?.data?.message || (mode === 'transfer' ? 'Transfer failed' : 'Withdrawal failed') })
       setStep('failed')
     } finally { setLoading(false) }
   }
@@ -66,173 +97,38 @@ export default function Transfer() {
       </div>
 
       {step === 'form' && (
-        <div className="flex gap-1 p-1 rounded-xl mb-6" style={{ background: 'var(--bg-tertiary)' }}>
-          {[
-            ['transfer', 'Transfer'],
-            ['withdraw', 'Withdraw'],
-          ].map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => {
-                setMode(value)
-                reset()
-              }}
-              className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
-              style={mode === value
-                ? { background: 'var(--bg-secondary)', color: 'var(--text-primary)', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }
-                : { color: 'var(--text-muted)' }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <TransferModeToggle
+          mode={mode}
+          onChange={(nextMode) => {
+            setMode(nextMode)
+            reset()
+          }}
+        />
       )}
+      <TransferStepIndicator step={step} />
 
-      {/* Step indicator */}
-      {step === 'form' || step === 'confirm' ? (
-        <div className="flex gap-2 mb-6">
-          {['Details', 'Confirm'].map((label, i) => (
-            <div key={label} className="flex items-center gap-2">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold
-                ${(step === 'form' && i === 0) || (step === 'confirm' && i <= 1) ? 'text-white' : ''}`}
-                style={(step === 'form' && i === 0) || (step === 'confirm' && i <= 1)
-                  ? { background: 'var(--brand)' }
-                  : { background: 'var(--border)', color: 'var(--text-muted)' }
-                }>
-                {i + 1}
-              </div>
-              <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{label}</span>
-              {i < 1 && <div className="w-8 h-px" style={{ background: 'var(--border)' }} />}
-            </div>
-          ))}
-        </div>
-      ) : null}
-
-      {/* Form */}
       {step === 'form' && (
-        <form onSubmit={handleSubmit(onReview)} className="space-y-4">
-          <div className="card p-5 space-y-4">
-            <div>
-              {mode === 'transfer' ? (
-                <>
-                  <label className="label">Recipient User ID</label>
-                  <div className="relative">
-                    <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 opacity-40" />
-                <input
-                  className="input-field pl-9"
-                  type="number"
-                  placeholder="Enter user ID"
-                  title="Enter the WalletPay User ID of the recipient"
-                      {...register('receiverId', { required: 'Recipient ID required', min: { value: 1, message: 'Invalid ID' } })} />
-                  </div>
-                  {errors.receiverId && <p className="text-xs text-red-500 mt-1">{errors.receiverId.message}</p>}
-                </>
-              ) : (
-                <>
-                  <label className="label">Withdrawal Note</label>
-                  <input
-                    className="input-field"
-                    placeholder="Optional note for this withdrawal"
-                    title="Add an optional note for this withdrawal"
-                    {...register('destination')} />
-                </>
-              )}
-            </div>
-            <div>
-              <label className="label">Amount (₹)</label>
-              <input
-                className="input-field text-xl font-bold"
-                type="number"
-                min="1"
-                max="25000"
-                placeholder="0"
-                title="Enter transfer or withdrawal amount (max ₹25,000)"
-                {...register('amount', {
-                  required: 'Amount required',
-                  min: { value: 1, message: 'Min ₹1' },
-                  max: { value: 25000, message: 'Max ₹25,000 per transfer' }
-                })} />
-              {errors.amount && <p className="text-xs text-red-500 mt-1">{errors.amount.message}</p>}
-              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                {mode === 'transfer' ? 'Maximum ₹25,000 per transfer' : 'Maximum ₹25,000 per withdrawal'}
-              </p>
-            </div>
-            <div>
-              <label className="label">{mode === 'transfer' ? 'Note (optional)' : 'Description (optional)'}</label>
-              <input
-                className="input-field"
-                placeholder="What's it for?"
-                title="Optional note describing this transfer or withdrawal"
-                {...register('description', { maxLength: { value: 255, message: 'Max 255 chars' } })} />
-            </div>
-          </div>
-          <button type="submit" className="btn-primary w-full py-3">
-            {mode === 'transfer' ? 'Review Transfer →' : 'Review Withdrawal →'}
-          </button>
-        </form>
+        <TransferForm
+          mode={mode}
+          errors={errors}
+          register={register}
+          handleSubmit={handleSubmit}
+          onReview={onReview}
+        />
       )}
 
-      {/* Confirm */}
       {step === 'confirm' && (
-        <div className="space-y-4 animate-slide-up">
-          <div className="card p-6">
-            <div className="flex items-center justify-center w-16 h-16 rounded-2xl mx-auto mb-4"
-              style={{ background: 'rgba(59,130,246,0.1)' }}>
-              <ArrowLeftRight size={28} className="text-blue-500" />
-            </div>
-            <h3 className="text-center font-black text-xl mb-5" style={{ color: 'var(--text-primary)' }}>
-              {mode === 'transfer' ? 'Confirm Transfer' : 'Confirm Withdrawal'}
-            </h3>
-            <div className="space-y-3">
-              {[
-                ...(mode === 'transfer' ? [['To (User ID)', formData?.receiverId]] : [['Withdrawal Note', formData?.destination || '—']]),
-                ['Amount', fmt.currency(formData?.amount)],
-                ['Note', formData?.description || '—'],
-              ].map(([k, v]) => (
-                <div key={k} className="flex justify-between text-sm">
-                  <span style={{ color: 'var(--text-muted)' }}>{k}</span>
-                  <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{v}</span>
-                </div>
-              ))}
-            </div>
-            <div className="h-px my-4" style={{ background: 'var(--border)' }} />
-            <p className="text-xs text-center" style={{ color: 'var(--text-muted)' }}>
-              {mode === 'transfer'
-                ? '⚠️ Transfers cannot be reversed. Please double-check before confirming.'
-                : '⚠️ Withdrawals will reduce your wallet balance immediately after processing.'}
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <button onClick={() => setStep('form')} className="btn-secondary flex-1">← Back</button>
-            <button onClick={onConfirm} disabled={loading} className="btn-primary flex-1">
-              {loading ? (mode === 'transfer' ? 'Sending…' : 'Processing…') : (mode === 'transfer' ? 'Confirm & Send' : 'Confirm & Withdraw')}
-            </button>
-          </div>
-        </div>
+        <TransferConfirmCard
+          mode={mode}
+          formData={formData}
+          loading={loading}
+          cooldownSeconds={transferCooldown.remainingSeconds}
+          onBack={() => setStep('form')}
+          onConfirm={onConfirm}
+        />
       )}
 
-      {/* Success */}
-      {step === 'success' && (
-        <div className="card p-8 text-center animate-slide-up">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
-            style={{ background: 'rgba(22,179,110,0.12)' }}>
-            <CheckCircle size={32} className="text-green-500" />
-          </div>
-          <h2 className="text-xl font-black mb-1" style={{ color: 'var(--text-primary)' }}>
-            {mode === 'transfer' ? 'Transfer Sent!' : 'Withdrawal Submitted!'}
-          </h2>
-          <p className="text-3xl font-black mb-1" style={{ color: 'var(--brand)' }}>{fmt.currency(result?.amount)}</p>
-          <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
-            {mode === 'transfer'
-              ? `Successfully sent to User #${result?.receiverId}`
-              : 'Your withdrawal request was submitted successfully'}
-          </p>
-          <button onClick={doReset} className="btn-primary w-full">
-            {mode === 'transfer' ? 'New Transfer' : 'New Withdrawal'}
-          </button>
-        </div>
-      )}
+      <TransferStatusCard mode={mode} step={step} result={result} onReset={doReset} />
 
       <PaymentSuccessOverlay
         open={successOpen}
@@ -243,20 +139,6 @@ export default function Transfer() {
         onClose={() => { setSuccessOpen(false); doReset() }}
       />
 
-      {/* Failed */}
-      {step === 'failed' && (
-        <div className="card p-8 text-center animate-slide-up">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
-            style={{ background: 'rgba(239,68,68,0.12)' }}>
-            <XCircle size={32} className="text-red-500" />
-          </div>
-          <h2 className="text-xl font-black mb-1" style={{ color: 'var(--text-primary)' }}>
-            {mode === 'transfer' ? 'Transfer Failed' : 'Withdrawal Failed'}
-          </h2>
-          <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>{result?.error}</p>
-          <button onClick={doReset} className="btn-primary w-full">Try Again</button>
-        </div>
-      )}
     </div>
   )
 }

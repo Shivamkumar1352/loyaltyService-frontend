@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Upload, CheckCircle, Clock, XCircle, AlertCircle } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 import { userAPI, kycAPI } from '../../core/api'
 import { useAuthStore } from '../../store'
 import { fmt } from '../../shared/utils'
 import { Skeleton } from '../../shared/components'
 import toast from 'react-hot-toast'
+import { getKycRequiredMessage } from './kycAccess'
 
 const KYC_STATUS_UI = {
   APPROVED:      { icon: <CheckCircle size={16} />, color: '#16b36e', bg: 'rgba(22,179,110,0.1)',  label: 'KYC Approved' },
@@ -27,7 +29,9 @@ export default function Profile() {
   const [kycDocType, setKycDocType] = useState('AADHAAR')
   const [kycDocNum, setKycDocNum] = useState('')
   const [submittingKyc, setSubmittingKyc] = useState(false)
-  const [tab, setTab] = useState('profile')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const requestedTab = searchParams.get('tab')
+  const [tab, setTab] = useState(requestedTab === 'kyc' ? 'kyc' : 'profile')
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm()
 
@@ -45,6 +49,9 @@ export default function Profile() {
   }, [reset])
 
   useEffect(() => { load() }, [load])
+  useEffect(() => {
+    setTab(requestedTab === 'kyc' ? 'kyc' : 'profile')
+  }, [requestedTab])
 
   const onSaveProfile = async (data) => {
     setSaving(true)
@@ -72,12 +79,22 @@ export default function Profile() {
       toast.success('KYC submitted! Under review.')
       setKycFile(null)
       setKycDocNum('')
+      setSearchParams({ tab: 'kyc', status: 'PENDING' }, { replace: true })
     } catch (err) {
       toast.error(err.response?.data?.message || 'KYC submission failed')
     } finally { setSubmittingKyc(false) }
   }
 
   const kycUi = KYC_STATUS_UI[kycStatus?.status || 'NOT_SUBMITTED']
+  const kycStatusValue = kycStatus?.status || searchParams.get('status') || 'NOT_SUBMITTED'
+  const showKycRequiredBanner = searchParams.get('kycRequired') === '1'
+  const kycMessage = getKycRequiredMessage(kycStatusValue)
+
+  const setActiveTab = (nextTab) => {
+    const nextParams = new URLSearchParams(searchParams)
+    nextParams.set('tab', nextTab)
+    setSearchParams(nextParams, { replace: true })
+  }
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-slide-up">
@@ -85,6 +102,13 @@ export default function Profile() {
         <h1 className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>Profile & KYC</h1>
         <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Manage your account details</p>
       </div>
+
+      {showKycRequiredBanner && (
+        <div className="card p-4 border-l-4" style={{ borderLeftColor: kycUi.color }}>
+          <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>KYC required</p>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>{kycMessage}</p>
+        </div>
+      )}
 
       {/* Avatar + KYC badge */}
       <div className="card p-6 flex items-center gap-5">
@@ -111,7 +135,7 @@ export default function Profile() {
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--bg-tertiary)' }}>
         {[['profile', 'Profile Details'], ['kyc', 'KYC Verification']].map(([val, label]) => (
-          <button key={val} onClick={() => setTab(val)}
+          <button key={val} onClick={() => setActiveTab(val)}
             className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
             style={tab === val
               ? { background: 'var(--bg-secondary)', color: 'var(--text-primary)', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }
@@ -207,6 +231,9 @@ export default function Profile() {
                 {kycStatus?.rejectionReason && (
                   <p className="text-xs text-red-500 mt-0.5">Reason: {kycStatus.rejectionReason}</p>
                 )}
+                <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                  Your wallet will be created after your KYC is approved.
+                </p>
               </div>
             </div>
           </div>

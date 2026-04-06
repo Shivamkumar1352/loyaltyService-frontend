@@ -54,8 +54,8 @@ export default function Signup() {
         <div className="absolute inset-0 opacity-10"
           style={{ backgroundImage: 'radial-gradient(circle at 20% 80%, #fff 1px, transparent 1px), radial-gradient(circle at 80% 20%, #fff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
         <div className="flex items-center gap-3 relative">
-          <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white font-black">W</div>
-          <span className="text-white font-black text-xl tracking-tight">WalletPay</span>
+          <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white font-black">B</div>
+          <span className="text-white font-black text-xl tracking-tight">Batua</span>
         </div>
         <div className="relative">
           <h1 className="text-white font-black text-4xl leading-tight mb-4">
@@ -75,7 +75,7 @@ export default function Signup() {
                 {step === 'form' ? 'Create account' : 'Verify email'}
               </h2>
               <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                {step === 'form' ? 'Start your WalletPay journey' : `OTP sent to ${email}`}
+                {step === 'form' ? 'Start your Batua journey' : `OTP sent to ${email}`}
               </p>
             </div>
             <button
@@ -123,8 +123,8 @@ export default function Signup() {
                   className="input-field"
                   type="tel"
                   placeholder="9876543210"
-                  title="Enter your phone number (10–15 digits)"
-                  {...register('phone', { required: 'Phone required', pattern: { value: /^[0-9]{10,15}$/, message: '10–15 digits' } })} />
+                  title="Enter your phone number (10 digits)"
+                  {...register('phone', { required: 'Phone required', pattern: { value: /^[0-9]{10}$/, message: 'must be exactly 10 digits' } })} />
                 {errors.phone && (
                   <p className="text-xs text-red-500 mt-1">
                     {String((errors.phone.message as any)?.message ?? errors.phone.message)}

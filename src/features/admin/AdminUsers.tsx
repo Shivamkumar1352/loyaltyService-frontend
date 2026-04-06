@@ -5,6 +5,7 @@ import { fmt } from '../../shared/utils'
 import { Badge, Pagination, Modal, Table } from '../../shared/components'
 import toast from 'react-hot-toast'
 import { useDebouncedValue } from '../../shared/hooks/useDebouncedValue'
+import { useThrottledValue } from '../../shared/hooks/useThrottledValue'
 
 const ROLES = ['USER', 'ADMIN', 'MERCHANT']
 const KYC_STATUSES = ['APPROVED', 'PENDING', 'REJECTED', 'NOT_SUBMITTED']
@@ -40,18 +41,19 @@ export default function AdminUsers() {
   const [rewardingKyc, setRewardingKyc] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
   const debouncedSearch = useDebouncedValue(search, 300)
+  const throttledSearch = useThrottledValue(debouncedSearch, 900)
 
   const load = useCallback(async (pageNum = 0) => {
     setLoading(true)
     try {
       let res
-      if (debouncedSearch.trim()) {
+      if (throttledSearch.trim()) {
         if (searchMode === 'email') {
-          res = await adminAPI.searchByEmail(debouncedSearch.trim())
+          res = await adminAPI.searchByEmail(throttledSearch.trim())
         } else if (searchMode === 'phone') {
-          res = await adminAPI.searchByPhone(debouncedSearch.trim())
+          res = await adminAPI.searchByPhone(throttledSearch.trim())
         } else {
-          res = await adminAPI.searchUsers(debouncedSearch.trim(), pageNum)
+          res = await adminAPI.searchUsers(throttledSearch.trim(), pageNum)
         }
       } else if (filters.kycStatus) {
         res = await adminAPI.searchByKyc(filters.kycStatus, pageNum)
@@ -62,7 +64,7 @@ export default function AdminUsers() {
       setUsers(data.content || [])
       setPage({ current: data.number || 0, total: data.totalPages || 0 })
     } finally { setLoading(false) }
-  }, [debouncedSearch, searchMode, filters])
+  }, [filters, searchMode, throttledSearch])
 
   useEffect(() => {
     load(0)

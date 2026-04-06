@@ -6,6 +6,11 @@ import { authAPI } from '../../core/api'
 import { useAuthStore, useThemeStore } from '../../store'
 import toast from 'react-hot-toast'
 import { normalizeIdentifier } from './authUtils'
+import { useCooldown } from '../../shared/hooks/useCooldown'
+import { fetchKycGate } from '../profile/kycAccess'
+
+const LOGIN_SUBMIT_COOLDOWN_MS = 2000
+const OTP_RESEND_COOLDOWN_MS = 30000
 
 export default function Login() {
   const [showPwd, setShowPwd] = useState(false)
@@ -16,20 +21,39 @@ export default function Login() {
   const { setAuth } = useAuthStore()
   const { isDark, toggle } = useThemeStore()
   const navigate = useNavigate()
+  const loginCooldown = useCooldown()
+  const otpResendCooldown = useCooldown()
 
   const { register, handleSubmit, formState: { errors }, setValue } = useForm()
 
-  const doSetAuthFromResponse = (res) => {
+  const doSetAuthFromResponse = async (res) => {
     const payload = res?.data?.data ?? res?.data ?? res
     const { accessToken, refreshToken, user } = payload || {}
     if (!accessToken || !user) {
       throw new Error('Invalid login response')
     }
     setAuth(user, accessToken, refreshToken)
-    navigate(user.role === 'ADMIN' ? '/admin/dashboard' : '/dashboard')
+
+    if (user.role === 'ADMIN') {
+      navigate('/admin/dashboard')
+      return
+    }
+
+    try {
+      const gate = await fetchKycGate()
+      navigate(gate.approved ? '/dashboard' : gate.redirectTo)
+    } catch {
+      navigate('/dashboard')
+    }
   }
 
   const onPasswordLogin = async (data) => {
+    if (loginCooldown.isCoolingDown) {
+      toast.error(`Please wait ${loginCooldown.remainingSeconds}s before trying again`)
+      return
+    }
+
+    loginCooldown.start(LOGIN_SUBMIT_COOLDOWN_MS)
     setLoading(true)
     try {
       const { raw, phone, isEmail, isPhone } = normalizeIdentifier(data.identifier)
@@ -49,6 +73,12 @@ export default function Login() {
   }
 
   const onSendOtp = async (data) => {
+    if (loginCooldown.isCoolingDown) {
+      toast.error(`Please wait ${loginCooldown.remainingSeconds}s before requesting OTP again`)
+      return
+    }
+
+    loginCooldown.start(LOGIN_SUBMIT_COOLDOWN_MS)
     setLoading(true)
     try {
       const { raw, phone, isEmail, isPhone } = normalizeIdentifier(data.identifier)
@@ -60,12 +90,19 @@ export default function Login() {
 
       toast.success('OTP sent')
       setOtpStep('enter_otp')
+      otpResendCooldown.start(OTP_RESEND_COOLDOWN_MS)
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to send OTP')
     } finally { setLoading(false) }
   }
 
   const onVerifyOtpLogin = async (data) => {
+    if (loginCooldown.isCoolingDown) {
+      toast.error(`Please wait ${loginCooldown.remainingSeconds}s before trying again`)
+      return
+    }
+
+    loginCooldown.start(LOGIN_SUBMIT_COOLDOWN_MS)
     setLoading(true)
     try {
       const { raw, phone, isEmail, isPhone } = normalizeIdentifier(identifier)
@@ -90,8 +127,8 @@ export default function Login() {
         <div className="absolute inset-0 opacity-10"
           style={{ backgroundImage: 'radial-gradient(circle at 20% 80%, #fff 1px, transparent 1px), radial-gradient(circle at 80% 20%, #fff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
         <div className="flex items-center gap-3 relative">
-          <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white font-black">W</div>
-          <span className="text-white font-black text-xl tracking-tight">WalletPay</span>
+          <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white font-black">B</div>
+          <span className="text-white font-black text-xl tracking-tight">Batua</span>
         </div>
         <div className="relative">
           <h1 className="text-white font-black text-4xl leading-tight mb-4">
@@ -118,7 +155,7 @@ export default function Login() {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h2 className="font-black text-2xl mb-0.5" style={{ color: 'var(--text-primary)' }}>Sign in</h2>
-              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Welcome back to WalletPay</p>
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Welcome back to Batua</p>
             </div>
             <button
               onClick={toggle}
@@ -199,7 +236,7 @@ export default function Login() {
                 </Link>
               </div>
               <button type="submit" disabled={loading} className="btn-primary w-full">
-                {loading ? 'Signing in…' : 'Sign in'}
+                {loading ? 'Signing in…' : loginCooldown.isCoolingDown ? `Try again in ${loginCooldown.remainingSeconds}s` : 'Sign in'}
               </button>
             </form>
           ) : (
@@ -220,8 +257,8 @@ export default function Login() {
                     </div>
                     {errors.identifier && <p className="text-xs text-red-500 mt-1">{String(errors.identifier.message)}</p>}
                   </div>
-                  <button type="submit" disabled={loading} className="btn-primary w-full">
-                    {loading ? 'Sending OTP…' : 'Send OTP'}
+                  <button type="submit" disabled={loading || loginCooldown.isCoolingDown} className="btn-primary w-full">
+                    {loading ? 'Sending OTP…' : loginCooldown.isCoolingDown ? `Wait ${loginCooldown.remainingSeconds}s` : 'Send OTP'}
                   </button>
                 </form>
               ) : (
@@ -241,8 +278,8 @@ export default function Login() {
                     />
                     {errors.otp && <p className="text-xs text-red-500 mt-1">{String(errors.otp.message)}</p>}
                   </div>
-                  <button type="submit" disabled={loading} className="btn-primary w-full">
-                    {loading ? 'Verifying…' : 'Verify & Sign in'}
+                  <button type="submit" disabled={loading || loginCooldown.isCoolingDown} className="btn-primary w-full">
+                    {loading ? 'Verifying…' : loginCooldown.isCoolingDown ? `Wait ${loginCooldown.remainingSeconds}s` : 'Verify & Sign in'}
                   </button>
                   <div className="flex gap-2">
                     <button
@@ -254,12 +291,18 @@ export default function Login() {
                     </button>
                     <button
                       type="button"
-                      disabled={loading}
+                      disabled={loading || otpResendCooldown.isCoolingDown}
                       onClick={async () => {
+                        if (otpResendCooldown.isCoolingDown) {
+                          toast.error(`Please wait ${otpResendCooldown.remainingSeconds}s before resending OTP`)
+                          return
+                        }
+
                         const { raw, phone, isEmail, isPhone } = normalizeIdentifier(identifier)
                         try {
                           if (isEmail) await authAPI.sendOtp({ email: raw })
                           else await authAPI.sendOtp({ phone: isPhone ? phone : raw })
+                          otpResendCooldown.start(OTP_RESEND_COOLDOWN_MS)
                           toast.success('OTP resent')
                         } catch (err) {
                           toast.error(err.response?.data?.message || 'Failed to resend OTP')
@@ -267,7 +310,7 @@ export default function Login() {
                       }}
                       className="btn-ghost flex-1 text-xs"
                     >
-                      Resend OTP
+                      {otpResendCooldown.isCoolingDown ? `Resend in ${otpResendCooldown.remainingSeconds}s` : 'Resend OTP'}
                     </button>
                   </div>
                 </form>

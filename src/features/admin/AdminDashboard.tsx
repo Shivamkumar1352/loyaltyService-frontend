@@ -82,13 +82,6 @@ export default function AdminDashboard() {
     }
   }
 
-  const kycData = stats ? [
-    { name: 'Approved', value: stats.kycApproved },
-    { name: 'Pending',  value: stats.kycPending },
-    { name: 'Rejected', value: stats.kycRejected },
-    { name: 'Not Submitted', value: stats.kycNotSubmitted },
-  ].filter(d => d.value > 0) : []
-
   const kycBarData = stats ? [
     { label: 'Approved', value: stats.kycApproved ?? 0, color: '#16b36e' },
     { label: 'Pending', value: stats.kycPending ?? 0, color: '#f59e0b' },

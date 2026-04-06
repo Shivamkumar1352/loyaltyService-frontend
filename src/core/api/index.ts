@@ -1,22 +1,21 @@
 import axios from 'axios'
 import toast from 'react-hot-toast'
-import { useAuthStore } from '../../store'
+import { getAuthStoreState } from '../../store'
 
-// Prefer relative /api calls via Vite proxy in dev.
-// In production, set VITE_API_BASE_URL (e.g. https://api.example.com)
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
+const REQUEST_TIMEOUT_MS = 30000
 
 const api = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 15000,
+  timeout: REQUEST_TIMEOUT_MS,
 })
 
 let refreshRequest = null
 let lastNetworkToastAt = 0
 
 function getAuthState() {
-  return useAuthStore.getState()
+  return getAuthStoreState()
 }
 
 function clearAuthAndRedirect() {
@@ -59,7 +58,7 @@ async function refreshAccessToken() {
 
     refreshRequest = api.post('/api/auth/refresh', { refreshToken }, {
       headers: { 'Content-Type': 'application/json' },
-      timeout: 15000,
+      timeout: REQUEST_TIMEOUT_MS,
     })
       .then((response) => {
         const payload = getRefreshPayload(response.data)

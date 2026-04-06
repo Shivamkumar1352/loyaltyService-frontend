@@ -6,6 +6,9 @@ import { Skeleton, Modal } from '../../shared/components'
 import ScratchCard from '../../shared/components/ScratchCard'
 import toast from 'react-hot-toast'
 import { useNotificationStore } from '../../store'
+import { useCooldown } from '../../shared/hooks/useCooldown'
+
+const REWARD_ACTION_COOLDOWN_MS = 4000
 
 const TIER_CONFIG = {
   SILVER:   { color: '#9ca3af', bg: 'rgba(156,163,175,0.1)', label: '🥈 Silver' },
@@ -31,6 +34,7 @@ export default function Rewards() {
   const [selectedReward, setSelectedReward] = useState(null)
   const [isRedeemingScratch, setIsRedeemingScratch] = useState(false)
   const addNtf = useNotificationStore((s) => s.add)
+  const rewardActionCooldown = useCooldown()
 
   const load = useCallback(async (pageNumber = 0) => {
     setLoading(true)
@@ -60,6 +64,12 @@ export default function Rewards() {
   }, [load, page]) 
 
   const handleScratchComplete = async (reward) => {
+    if (rewardActionCooldown.isCoolingDown) {
+      toast.error(`Please wait ${rewardActionCooldown.remainingSeconds}s before redeeming again`)
+      throw new Error('Reward action cooldown active')
+    }
+
+    rewardActionCooldown.start(REWARD_ACTION_COOLDOWN_MS)
     setIsRedeemingScratch(true)
     try {
       const response = await rewardsAPI.redeem({ rewardId: reward.id })
@@ -101,6 +111,11 @@ export default function Rewards() {
   }
 
   const handleRedeemPoints = async () => {
+    if (rewardActionCooldown.isCoolingDown) {
+      toast.error(`Please wait ${rewardActionCooldown.remainingSeconds}s before converting points again`)
+      return
+    }
+
     if (!redeemPoints || Number(redeemPoints) < 1) {
       toast.error('Please enter valid points amount')
       return
@@ -111,6 +126,7 @@ export default function Rewards() {
       return
     }
     
+    rewardActionCooldown.start(REWARD_ACTION_COOLDOWN_MS)
     setRedeeming(true)
     try {
       await rewardsAPI.redeemPoints(Number(redeemPoints))
@@ -254,9 +270,9 @@ export default function Rewards() {
       setSelectedReward(item);
       setScratchCardOpen(true);
     }} 
-    disabled={!canRedeem}
+    disabled={!canRedeem || rewardActionCooldown.isCoolingDown}
     className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-all ${canRedeem ? 'btn-primary' : 'btn-secondary opacity-50 cursor-not-allowed'}`}>
-    {'Scratch'}
+    {rewardActionCooldown.isCoolingDown ? `Wait ${rewardActionCooldown.remainingSeconds}s` : 'Scratch'}
   </button>
 </div>
                     {/* <div className="flex items-center justify-between">
@@ -394,10 +410,10 @@ export default function Rewards() {
             </button>
             <button 
               onClick={handleRedeemPoints}
-              disabled={redeeming || !redeemPoints || Number(redeemPoints) < 1 || Number(redeemPoints) > (summary?.points || 0)} 
+              disabled={redeeming || rewardActionCooldown.isCoolingDown || !redeemPoints || Number(redeemPoints) < 1 || Number(redeemPoints) > (summary?.points || 0)} 
               className="btn-primary flex-1"
             >
-              {redeeming ? 'Converting…' : 'Convert'}
+              {redeeming ? 'Converting…' : rewardActionCooldown.isCoolingDown ? `Wait ${rewardActionCooldown.remainingSeconds}s` : 'Convert'}
             </button>
           </div>
         </div>

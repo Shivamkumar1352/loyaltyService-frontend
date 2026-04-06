@@ -35,6 +35,7 @@
     color: var(--text-primary);
     font-family: 'Syne', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
 
   ::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -104,5 +105,78 @@
     @apply animate-shimmer rounded-lg;
     background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--border) 50%, var(--bg-tertiary) 75%);
     background-size: 200% 100%;
+  }
+}
+
+@layer utilities {
+  .animation-delay-100 { animation-delay: 100ms; }
+  .animation-delay-200 { animation-delay: 200ms; }
+  .animation-delay-300 { animation-delay: 300ms; }
+  .animation-delay-400 { animation-delay: 400ms; }
+  .animation-delay-500 { animation-delay: 500ms; }
+
+  .landing-grid {
+    background-image:
+      linear-gradient(rgba(15, 23, 42, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(15, 23, 42, 0.06) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: radial-gradient(circle at center, black 38%, transparent 84%);
+  }
+
+  .landing-orb {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(10px);
+    animation: drift 16s ease-in-out infinite;
+    opacity: 0.85;
+  }
+
+  .landing-orb-1 {
+    top: 10%;
+    left: -4rem;
+    height: 15rem;
+    width: 15rem;
+    background: radial-gradient(circle, rgba(22, 179, 110, 0.26) 0%, rgba(22, 179, 110, 0.04) 70%);
+  }
+
+  .landing-orb-2 {
+    right: 8%;
+    top: 18%;
+    height: 11rem;
+    width: 11rem;
+    background: radial-gradient(circle, rgba(250, 204, 21, 0.22) 0%, rgba(250, 204, 21, 0.02) 70%);
+    animation-delay: 2s;
+  }
+
+  .landing-orb-3 {
+    right: 18%;
+    bottom: 8%;
+    height: 18rem;
+    width: 18rem;
+    background: radial-gradient(circle, rgba(15, 23, 42, 0.12) 0%, rgba(15, 23, 42, 0.01) 72%);
+    animation-delay: 5s;
+  }
+
+  .landing-float {
+    animation: floatCard 7s ease-in-out infinite;
+    transform-origin: center;
+  }
+}
+
+@keyframes drift {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -18px, 0) scale(1.05);
+  }
+}
+
+@keyframes floatCard {
+  0%, 100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(1deg);
   }
 }

@@ -91,12 +91,11 @@ export default function Analytics() {
 
   // Live polling while tab is visible
   useEffect(() => {
-    let id: ReturnType<typeof setInterval> | undefined
     const tick = () => {
       if (typeof document !== 'undefined' && document.hidden) return
       load({ silent: true })
     }
-    id = setInterval(tick, POLL_MS)
+    const id = setInterval(tick, POLL_MS)
     const onVis = () => {
       if (!document.hidden) load({ silent: true })
     }
