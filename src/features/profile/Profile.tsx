@@ -18,6 +18,12 @@ const KYC_STATUS_UI = {
 
 const DOC_TYPES = ['AADHAAR', 'PAN', 'PASSPORT', 'DRIVING_LICENSE']
 
+function isImageFile(path?: string | null) {
+  if (!path) return false
+  const cleanPath = path.split('?')[0].toLowerCase()
+  return /\.(png|jpe?g|gif|webp|bmp|svg)$/.test(cleanPath)
+}
+
 export default function Profile() {
   const { user, setAuth, accessToken, refreshToken } = useAuthStore()
   const [profile, setProfile] = useState(null)
@@ -162,7 +168,7 @@ export default function Profile() {
                   {...register('name', { required: 'Required', minLength: { value: 2, message: 'Min 2 chars' } })}
                   title="Update your full name"
                 />
-                {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>}
+                {errors.name?.message && <p className="text-xs text-red-500 mt-1">{String(errors.name.message)}</p>}
               </div>
               <div>
                 <label className="label">Phone</label>
@@ -171,7 +177,7 @@ export default function Profile() {
                   type="tel"
                   title="Update your phone number"
                   {...register('phone', { required: 'Required', minLength: { value: 10, message: 'Min 10 digits' } })} />
-                {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone.message}</p>}
+                {errors.phone?.message && <p className="text-xs text-red-500 mt-1">{String(errors.phone.message)}</p>}
               </div>
               <div>
                 <label className="label">Email</label>
@@ -237,6 +243,35 @@ export default function Profile() {
               </div>
             </div>
           </div>
+
+          {kycStatus?.docFilePath && (
+            <div className="card p-5 space-y-3">
+              <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Your Document</p>
+              <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border)', background: 'var(--bg-tertiary)' }}>
+                {isImageFile(kycStatus.docFilePath) ? (
+                  <a
+                    href={kycStatus.docFilePath}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block"
+                    title="Open document in new tab"
+                  >
+                    <img
+                      src={kycStatus.docFilePath}
+                      alt="KYC document"
+                      className="w-full h-80 sm:h-[28rem] object-contain bg-white"
+                    />
+                  </a>
+                ) : (
+                  <iframe
+                    src={kycStatus.docFilePath}
+                    title="KYC document preview"
+                    className="w-full h-80 sm:h-[28rem] bg-white"
+                  />
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Submit form */}
           {(!kycStatus?.status || kycStatus.status === 'NOT_SUBMITTED' || kycStatus.status === 'REJECTED') && (

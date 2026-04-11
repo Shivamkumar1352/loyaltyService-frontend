@@ -189,6 +189,7 @@ export const walletAPI = {
   withdraw:         (data) => api.post('/api/wallet/withdraw', data),
   createOrder:      (amount) => api.post(`/api/payment/create-order?amount=${amount}`),
   verifyPayment:    (data) => api.post('/api/payment/verify', data),
+  markPaymentFailed:(data) => api.post('/api/payment/fail', data),
 }
 
 // ─── Rewards ──────────────────────────────────────────────────────────────────

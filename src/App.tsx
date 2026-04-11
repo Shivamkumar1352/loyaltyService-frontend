@@ -32,7 +32,7 @@ export default function App() {
   return (
     <Suspense fallback={<RouteLoader />}>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<PublicRoute><LandingPage /></PublicRoute>} />
 
         <Route path="/login"  element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />

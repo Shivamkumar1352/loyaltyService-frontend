@@ -308,7 +308,7 @@ export default function Rewards() {
 
       {/* History */}
       {tab === 'history' && (
-        <div className="card divide-y" style={{ '--tw-divide-opacity': 1 }}>
+        <div className="card divide-y" style={{ ['--tw-divide-opacity' as any]: 1 }}>
           {loading
             ? Array(5).fill(0).map((_, i) => (
                 <div key={i} className="flex items-center gap-3 p-4">

@@ -15,6 +15,7 @@ import { TransferStepIndicator } from './transfer/components/TransferStepIndicat
 import type {
   TransferFormData,
   TransferMode,
+  TransferRecipientType,
   TransferResult,
   TransferStep,
   WalletTransferPayload,
@@ -22,6 +23,15 @@ import type {
 } from './transfer/types'
 
 const TRANSFER_ACTION_COOLDOWN_MS = 4000
+
+function detectRecipientType(value: string): TransferRecipientType | null {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return 'email'
+  if (/^\d{10,15}$/.test(trimmed)) return trimmed.length >= 10 ? 'phone' : 'id'
+  if (/^[1-9]\d*$/.test(trimmed)) return 'id'
+  return null
+}
 
 export default function Transfer() {
   const [loading, setLoading] = useState(false)
@@ -32,10 +42,25 @@ export default function Transfer() {
   const [successOpen, setSuccessOpen] = useState(false)
   const addNtf = useNotificationStore((s) => s.add)
   const transferCooldown = useCooldown()
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<TransferFormData>()
+  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<TransferFormData>()
+
+  const getRecipientText = (data: TransferFormData | TransferResult | null) => {
+    const value = data?.recipientValue?.trim()
+    if (!value) return 'recipient'
+    const recipientType = (data?.recipientType as TransferRecipientType | undefined) ?? detectRecipientType(value)
+    if (recipientType === 'email') return value
+    if (recipientType === 'phone') return value
+    return `User #${value}`
+  }
 
   const onReview = (data: TransferFormData) => {
-    setFormData(data)
+    const recipientValue = data.recipientValue?.trim() || ''
+    const recipientType = detectRecipientType(recipientValue)
+    setFormData({
+      ...data,
+      recipientValue,
+      recipientType: recipientType || undefined,
+    })
     setStep('confirm')
   }
 
@@ -56,9 +81,16 @@ export default function Transfer() {
       }
 
       if (mode === 'transfer') {
-        const payload: WalletTransferPayload = {
-          ...basePayload,
-          receiverId: Number(formData.receiverId),
+        const recipientValue = formData.recipientValue?.trim() || ''
+        const recipientType = formData.recipientType || detectRecipientType(recipientValue) || 'id'
+        const payload: WalletTransferPayload = { ...basePayload }
+
+        if (recipientType === 'email') {
+          payload.recipientEmail = recipientValue
+        } else if (recipientType === 'phone') {
+          payload.recipientPhone = recipientValue
+        } else {
+          payload.receiverId = Number(recipientValue)
         }
         await walletAPI.transfer(payload)
       } else {
@@ -71,7 +103,7 @@ export default function Transfer() {
       addNtf({
         title: mode === 'transfer' ? 'Transfer successful' : 'Withdrawal successful',
         message: mode === 'transfer'
-          ? `Sent ${fmt.currency(formData.amount)} to User #${formData.receiverId}`
+          ? `Sent ${fmt.currency(formData.amount)} to ${getRecipientText(formData)}`
           : `Processed ${fmt.currency(formData.amount)} withdrawal`,
         severity: 'success',
         href: '/transactions',
@@ -112,6 +144,7 @@ export default function Transfer() {
           mode={mode}
           errors={errors}
           register={register}
+          watch={watch}
           handleSubmit={handleSubmit}
           onReview={onReview}
         />
@@ -133,7 +166,7 @@ export default function Transfer() {
       <PaymentSuccessOverlay
         open={successOpen}
         title={mode === 'transfer' ? 'Transfer successful' : 'Withdrawal successful'}
-        subtitle={mode === 'transfer' ? `Sent to User #${result?.receiverId}` : 'Money will reflect shortly'}
+        subtitle={mode === 'transfer' ? `Sent to ${getRecipientText(result)}` : 'Money will reflect shortly'}
         amountText={result?.amount ? fmt.currency(result?.amount) : undefined}
         primaryLabel="Back"
         onClose={() => { setSuccessOpen(false); doReset() }}

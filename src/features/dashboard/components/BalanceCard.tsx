@@ -12,7 +12,7 @@ type BalanceCardProps = {
 export function BalanceCard({ balance, loading, balanceVisible, onToggleVisibility }: BalanceCardProps) {
   return (
     <div
-      className="relative overflow-hidden rounded-2xl p-6 text-white"
+      className="relative overflow-hidden rounded-2xl p-4 text-white sm:p-6"
       style={{ background: 'linear-gradient(135deg, #042a1d 0%, #097349 40%, #3bcf88 100%)' }}
     >
       <div
@@ -25,9 +25,9 @@ export function BalanceCard({ balance, loading, balanceVisible, onToggleVisibili
       />
 
       <div className="relative">
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm font-medium text-white/70">Wallet Balance</p>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between gap-3 sm:justify-start">
             <span className="rounded-full bg-white/15 px-2 py-0.5 text-xs font-semibold">
               {balance?.status || 'ACTIVE'}
             </span>
@@ -43,13 +43,13 @@ export function BalanceCard({ balance, loading, balanceVisible, onToggleVisibili
         </div>
 
         {loading ? (
-          <div className="shimmer-line mb-1 h-10 w-40 rounded-lg" style={{ background: 'rgba(255,255,255,0.15)' }} />
+          <div className="shimmer-line mb-1 h-10 w-32 rounded-lg sm:w-40" style={{ background: 'rgba(255,255,255,0.15)' }} />
         ) : (
-          <p className="mb-1 text-4xl font-black tracking-tight">
+          <p className="mb-1 break-words pr-2 text-3xl font-black tracking-tight sm:text-4xl">
             {balanceVisible ? fmt.currency(balance?.balance) : '₹ ••••••'}
           </p>
         )}
-        <p className="text-xs text-white/50">
+        <p className="max-w-full text-xs leading-relaxed text-white/50">
           Last updated {balance?.lastUpdated ? fmt.datetime(balance.lastUpdated) : '—'}
         </p>
       </div>

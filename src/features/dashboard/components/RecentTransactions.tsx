@@ -1,4 +1,4 @@
-import { TrendingUp } from 'lucide-react'
+import { TrendingUp, ArrowDownLeft, ArrowUpRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Badge, Skeleton } from '../../../shared/components'
 import { fmt } from '../../../shared/utils'
@@ -8,9 +8,23 @@ import type { DashboardTransaction } from '../types'
 type RecentTransactionsProps = {
   transactions: DashboardTransaction[]
   loading: boolean
+  currentUserId?: string | number | null
 }
 
-export function RecentTransactions({ transactions, loading }: RecentTransactionsProps) {
+function isCredit(tx: DashboardTransaction, currentUserId?: string | number | null) {
+  if (tx.type === 'TOPUP' || tx.type === 'CASHBACK' || tx.type === 'REDEEM') return true
+  if (tx.type === 'TRANSFER' && currentUserId != null) {
+    return String((tx as any).receiverId) === String(currentUserId)
+  }
+  return false
+}
+
+function getTxnLabel(tx: DashboardTransaction, credit: boolean) {
+  if (tx.type === 'TRANSFER') return credit ? 'RECEIVED' : 'SENT'
+  return tx.type || 'UNKNOWN'
+}
+
+export function RecentTransactions({ transactions, loading, currentUserId }: RecentTransactionsProps) {
   return (
     <div className="card p-5">
       <div className="mb-4 flex items-center justify-between">
@@ -39,19 +53,25 @@ export function RecentTransactions({ transactions, loading }: RecentTransactions
       ) : (
         <div className="space-y-3">
           {transactions.map((tx) => {
-            const incoming = ['TOPUP', 'CASHBACK', 'REDEEM'].includes(tx.type)
-            const Icon = TX_ICON_COMPONENTS[tx.type] || FALLBACK_TX_ICON
+            const incoming = isCredit(tx, currentUserId)
+            const label = getTxnLabel(tx, incoming)
+            const Icon = tx.type === 'TRANSFER'
+              ? (incoming ? ArrowDownLeft : ArrowUpRight)
+              : (TX_ICON_COMPONENTS[tx.type] || FALLBACK_TX_ICON)
+            const iconClassName = tx.type === 'TRANSFER'
+              ? (incoming ? 'text-green-500' : 'text-red-400')
+              : TX_ICON_CLASSNAMES[tx.type]
             return (
               <div key={tx.id} className="group flex items-center gap-3">
                 <div
                   className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
                   style={{ background: 'var(--bg-tertiary)' }}
                 >
-                  <Icon size={14} className={TX_ICON_CLASSNAMES[tx.type]} />
+                  <Icon size={14} className={iconClassName} />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                    {tx.description || tx.type}
+                    {label}
                   </p>
                   <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{fmt.datetime(tx.createdAt)}</p>
                 </div>

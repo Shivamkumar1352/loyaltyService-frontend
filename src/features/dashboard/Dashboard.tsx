@@ -43,7 +43,7 @@ export default function Dashboard() {
       />
       <QuickActions />
       <RewardsSummary rewards={rewards} loading={loading} />
-      <RecentTransactions transactions={txns} loading={loading} />
+      <RecentTransactions transactions={txns} loading={loading} currentUserId={user?.id} />
     </div>
   )
 }

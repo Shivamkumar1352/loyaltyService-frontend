@@ -5,6 +5,12 @@ import { fmt } from '../../shared/utils'
 import { Pagination, Modal, Skeleton } from '../../shared/components'
 import toast from 'react-hot-toast'
 
+function isImageFile(path?: string | null) {
+  if (!path) return false
+  const cleanPath = path.split('?')[0].toLowerCase()
+  return /\.(png|jpe?g|gif|webp|bmp|svg)$/.test(cleanPath)
+}
+
 export default function AdminKyc() {
   const [pendingKyc, setPendingKyc] = useState([])
   const [loading, setLoading] = useState(true)
@@ -155,12 +161,33 @@ export default function AdminKyc() {
               ))}
             </div>
             {viewModal.docFilePath && (
-              <div>
-                <p className="label">Document File</p>
-                <a href={viewModal.docFilePath} target="_blank" rel="noopener noreferrer"
-                  className="btn-secondary text-sm w-full">
-                  View Document
-                </a>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <p className="label mb-0">Document Preview</p>
+                </div>
+                <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border)', background: 'var(--bg-tertiary)' }}>
+                  {isImageFile(viewModal.docFilePath) ? (
+                    <a
+                      href={viewModal.docFilePath}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block"
+                      title="Open document in new tab"
+                    >
+                      <img
+                        src={viewModal.docFilePath}
+                        alt={`${viewModal.docType} document`}
+                        className="w-full h-80 sm:h-[28rem] object-contain bg-white"
+                      />
+                    </a>
+                  ) : (
+                    <iframe
+                      src={viewModal.docFilePath}
+                      title="KYC document preview"
+                      className="w-full h-80 sm:h-[28rem] bg-white"
+                    />
+                  )}
+                </div>
               </div>
             )}
             <div className="flex gap-3 mt-2">

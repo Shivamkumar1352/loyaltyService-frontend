@@ -22,21 +22,22 @@ import toast from 'react-hot-toast'
 
 const REWARD_TYPES = ['CASHBACK', 'COUPON', 'VOUCHER']
 const REWARD_TIERS = ['', 'SILVER', 'GOLD', 'PLATINUM']
+const EMPTY_REWARD_FORM = {
+  name: '',
+  description: '',
+  type: 'CASHBACK',
+  pointsRequired: '',
+  stock: '',
+  tierRequired: '',
+  cashbackAmount: '',
+}
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [addRewardOpen, setAddRewardOpen] = useState(false)
   const [addingReward, setAddingReward] = useState(false)
-  const [rewardForm, setRewardForm] = useState({
-    name: '',
-    description: '',
-    type: 'CASHBACK',
-    pointsRequired: '',
-    stock: '',
-    tierRequired: '',
-    active: true,
-  })
+  const [rewardForm, setRewardForm] = useState(EMPTY_REWARD_FORM)
 
   const load = async () => {
     setLoading(true)
@@ -53,6 +54,10 @@ export default function AdminDashboard() {
       toast.error('Fill the required reward fields')
       return
     }
+    if (rewardForm.type === 'CASHBACK' && !rewardForm.cashbackAmount) {
+      toast.error('Cashback amount is required for cashback rewards')
+      return
+    }
     setAddingReward(true)
     try {
       await adminAPI.addRewardItem({
@@ -62,19 +67,11 @@ export default function AdminDashboard() {
         pointsRequired: Number(rewardForm.pointsRequired),
         stock: rewardForm.stock ? Number(rewardForm.stock) : undefined,
         tierRequired: rewardForm.tierRequired || undefined,
-        active: rewardForm.active,
+        cashbackAmount: rewardForm.type === 'CASHBACK' ? Number(rewardForm.cashbackAmount) : undefined,
       })
       toast.success('Reward item added')
       setAddRewardOpen(false)
-      setRewardForm({
-        name: '',
-        description: '',
-        type: 'CASHBACK',
-        pointsRequired: '',
-        stock: '',
-        tierRequired: '',
-        active: true,
-      })
+      setRewardForm(EMPTY_REWARD_FORM)
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to add reward item')
     } finally {
@@ -333,7 +330,11 @@ export default function AdminDashboard() {
               <select
                 className="input-field"
                 value={rewardForm.type}
-                onChange={(e) => setRewardForm((prev) => ({ ...prev, type: e.target.value }))}
+                onChange={(e) => setRewardForm((prev) => ({
+                  ...prev,
+                  type: e.target.value,
+                  cashbackAmount: e.target.value === 'CASHBACK' ? prev.cashbackAmount : '',
+                }))}
               >
                 {REWARD_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
               </select>
@@ -373,14 +374,20 @@ export default function AdminDashboard() {
               </select>
             </div>
           </div>
-          <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-            <input
-              type="checkbox"
-              checked={rewardForm.active}
-              onChange={(e) => setRewardForm((prev) => ({ ...prev, active: e.target.checked }))}
-            />
-            Active reward item
-          </label>
+          {rewardForm.type === 'CASHBACK' && (
+            <div>
+              <label className="label">Cashback Amount</label>
+              <input
+                className="input-field"
+                type="number"
+                min="1"
+                step="0.01"
+                value={rewardForm.cashbackAmount}
+                onChange={(e) => setRewardForm((prev) => ({ ...prev, cashbackAmount: e.target.value }))}
+                placeholder="50"
+              />
+            </div>
+          )}
           <div className="flex gap-3">
             <button onClick={() => setAddRewardOpen(false)} className="btn-secondary flex-1">Cancel</button>
             <button onClick={addRewardItem} disabled={addingReward} className="btn-primary flex-1">

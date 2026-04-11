@@ -5,7 +5,7 @@ import { Eye, EyeOff, Sun, Moon, Mail, Phone, KeyRound, MessageSquareText } from
 import { authAPI } from '../../core/api'
 import { useAuthStore, useThemeStore } from '../../store'
 import toast from 'react-hot-toast'
-import { normalizeIdentifier } from './authUtils'
+import { normalizeIdentifier, validateIdentifier, validateOtp } from './authUtils'
 import { useCooldown } from '../../shared/hooks/useCooldown'
 import { fetchKycGate } from '../profile/kycAccess'
 
@@ -68,7 +68,7 @@ export default function Login() {
       doSetAuthFromResponse(res)
       toast.success('Welcome back!')
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Login failed')
+      toast.error('Wrong credentials')
     } finally { setLoading(false) }
   }
 
@@ -202,7 +202,7 @@ export default function Login() {
                     placeholder="you@example.com or 9876543210"
                     autoComplete="username"
                     title="Enter your registered email address or phone number"
-                    {...register('identifier', { required: 'Email or phone required' })}
+                    {...register('identifier', { validate: validateIdentifier })}
                   />
                   <Phone size={15} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-30" />
                 </div>
@@ -217,7 +217,9 @@ export default function Login() {
                     placeholder="••••••••"
                     title="Enter your account password"
                     autoComplete="current-password"
-                    {...register('password', { required: 'Password required' })} />
+                    {...register('password', {
+                      validate: (value) => value?.trim() ? true : 'Password required'
+                    })} />
                   <button
                     type="button"
                     onClick={() => setShowPwd(!showPwd)}
@@ -251,7 +253,7 @@ export default function Login() {
                         className="input-field pl-9"
                         placeholder="you@example.com or 9876543210"
                         title="Enter email or phone to receive OTP"
-                        {...register('identifier', { required: 'Email address required' })}
+                        {...register('identifier', { validate: validateIdentifier })}
                       />
                       {/* <Phone size={15} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-30" /> */}
                     </div>
@@ -274,7 +276,7 @@ export default function Login() {
                       maxLength={8}
                       placeholder="······"
                       title="Enter the OTP sent to your email or phone"
-                      {...register('otp', { required: 'OTP required', minLength: { value: 4, message: 'Min 4 digits' } })}
+                      {...register('otp', { validate: validateOtp })}
                     />
                     {errors.otp && <p className="text-xs text-red-500 mt-1">{String(errors.otp.message)}</p>}
                   </div>

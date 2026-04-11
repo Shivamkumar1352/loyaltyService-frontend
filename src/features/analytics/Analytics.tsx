@@ -149,7 +149,7 @@ export default function Analytics() {
 
   return (
     <div className="space-y-6 animate-slide-up">
-      <div className="flex items-start justify-between flex-wrap gap-3">
+      <div className="flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>Analytics</h1>
@@ -177,7 +177,7 @@ export default function Analytics() {
         <button
           type="button"
           onClick={() => load({ silent: !loading })}
-          className="btn-ghost p-2 rounded-xl relative"
+          className="btn-ghost p-2 rounded-xl relative self-start sm:self-auto"
           title="Refresh now"
           disabled={loading}
         >
@@ -185,7 +185,7 @@ export default function Analytics() {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard label="Total credited" value={loading ? '—' : fmt.currency(totals.credits)} icon={<TrendingUp size={18} />} loading={loading} />
         <StatCard label="Total debited" value={loading ? '—' : fmt.currency(totals.debits)} icon={<TrendingDown size={18} />} loading={loading} />
         <StatCard label="Successful txns" value={loading ? '—' : fmt.number(totals.successCount)} icon={<BarChart3 size={18} />} loading={loading} />
@@ -193,20 +193,20 @@ export default function Analytics() {
       </div>
 
       {/* Live trend — last 7 days */}
-      <div className="card p-5">
+      <div className="card p-4 sm:p-5">
         <div className="flex items-center gap-2 mb-4">
           <Activity size={18} style={{ color: 'var(--brand)' }} />
           <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Activity (last 7 days)</p>
         </div>
         {loading ? (
-          <Skeleton className="h-56 rounded-xl" />
+          <Skeleton className="h-52 rounded-xl sm:h-56" />
         ) : dailySeries.every((d) => d.amount === 0) ? (
-          <div className="h-56 flex items-center justify-center text-sm" style={{ color: 'var(--text-muted)' }}>
+          <div className="h-52 flex items-center justify-center text-sm sm:h-56" style={{ color: 'var(--text-muted)' }}>
             No successful transactions in this window yet
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={260}>
-            <AreaChart data={dailySeries} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+          <ResponsiveContainer width="100%" height={220} className="sm:!h-[260px]">
+            <AreaChart data={dailySeries} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
               <defs>
                 <linearGradient id="liveArea" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#16b36e" stopOpacity={0.35} />
@@ -215,7 +215,7 @@ export default function Analytics() {
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `₹${v}`} />
+              <YAxis width={44} tick={{ fontSize: 10 }} tickFormatter={(v) => `₹${v}`} />
               <Tooltip formatter={(v: number) => fmt.currency(v)} contentStyle={tooltipStyle} />
               <Area
                 key={`area-${chartKey}`}
@@ -234,32 +234,32 @@ export default function Analytics() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card p-5">
+        <div className="card p-4 sm:p-5">
           <p className="text-sm font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Spend vs Receive (successful)</p>
           {loading ? (
             <Skeleton className="h-44 rounded-xl" />
           ) : (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="rounded-2xl p-4 transition-transform duration-200" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid var(--border)' }}>
                 <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Outflow</p>
-                <p className="text-2xl font-black text-red-400 tabular-nums">{fmt.currency(topOutflow.out)}</p>
+                <p className="break-words text-xl font-black text-red-400 tabular-nums sm:text-2xl">{fmt.currency(topOutflow.out)}</p>
               </div>
               <div className="rounded-2xl p-4 transition-transform duration-200" style={{ background: 'rgba(22,179,110,0.08)', border: '1px solid var(--border)' }}>
                 <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Inflow</p>
-                <p className="text-2xl font-black text-green-500 tabular-nums">{fmt.currency(topOutflow.inflow)}</p>
+                <p className="break-words text-xl font-black text-green-500 tabular-nums sm:text-2xl">{fmt.currency(topOutflow.inflow)}</p>
               </div>
             </div>
           )}
         </div>
 
-        <div className="card p-5">
+        <div className="card p-4 sm:p-5">
           <p className="text-sm font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Transactions by type (amount)</p>
           {loading ? (
             <Skeleton className="h-44 rounded-xl" />
           ) : txTypePie.length === 0 ? (
             <div className="h-44 flex items-center justify-center text-sm" style={{ color: 'var(--text-muted)' }}>No data</div>
           ) : (
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={260}>
               <PieChart>
                 <Pie
                   key={`pie-tx-${chartKey}`}
@@ -268,8 +268,7 @@ export default function Analytics() {
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  outerRadius={78}
-                  label
+                  outerRadius={72}
                   isAnimationActive
                   animationDuration={800}
                 >
@@ -278,7 +277,7 @@ export default function Analytics() {
                   ))}
                 </Pie>
                 <Tooltip formatter={(v: number) => fmt.currency(v)} contentStyle={tooltipStyle} />
-                <Legend />
+                <Legend wrapperStyle={{ fontSize: 12, paddingTop: 12 }} />
               </PieChart>
             </ResponsiveContainer>
           )}
@@ -286,18 +285,18 @@ export default function Analytics() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card p-5">
+        <div className="card p-4 sm:p-5">
           <p className="text-sm font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Top transaction types (bar)</p>
           {loading ? (
-            <Skeleton className="h-56 rounded-xl" />
+            <Skeleton className="h-60 rounded-xl" />
           ) : barData.length === 0 ? (
-            <div className="h-56 flex items-center justify-center text-sm" style={{ color: 'var(--text-muted)' }}>No data</div>
+            <div className="h-60 flex items-center justify-center text-sm" style={{ color: 'var(--text-muted)' }}>No data</div>
           ) : (
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={barData}>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={barData} margin={{ top: 8, right: 8, left: -24, bottom: 36 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="type" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
+                <XAxis dataKey="type" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" interval={0} height={56} />
+                <YAxis width={48} tick={{ fontSize: 10 }} />
                 <Tooltip formatter={(v: number) => fmt.currency(v)} contentStyle={tooltipStyle} />
                 <Bar
                   dataKey="amount"
@@ -311,14 +310,14 @@ export default function Analytics() {
           )}
         </div>
 
-        <div className="card p-5">
+        <div className="card p-4 sm:p-5">
           <p className="text-sm font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Rewards activity (points)</p>
           {loading ? (
-            <Skeleton className="h-56 rounded-xl" />
+            <Skeleton className="h-60 rounded-xl" />
           ) : rewardTypePie.length === 0 ? (
-            <div className="h-56 flex items-center justify-center text-sm" style={{ color: 'var(--text-muted)' }}>No data</div>
+            <div className="h-60 flex items-center justify-center text-sm" style={{ color: 'var(--text-muted)' }}>No data</div>
           ) : (
-            <ResponsiveContainer width="100%" height={260}>
+            <ResponsiveContainer width="100%" height={280}>
               <PieChart>
                 <Pie
                   key={`pie-rw-${chartKey}`}
@@ -327,8 +326,8 @@ export default function Analytics() {
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  innerRadius={40}
-                  outerRadius={80}
+                  innerRadius={36}
+                  outerRadius={76}
                   isAnimationActive
                   animationDuration={800}
                 >
@@ -337,7 +336,7 @@ export default function Analytics() {
                   ))}
                 </Pie>
                 <Tooltip formatter={(v: number) => `${fmt.number(v)} pts`} contentStyle={tooltipStyle} />
-                <Legend />
+                <Legend wrapperStyle={{ fontSize: 12, paddingTop: 12 }} />
               </PieChart>
             </ResponsiveContainer>
           )}

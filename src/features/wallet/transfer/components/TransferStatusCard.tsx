@@ -1,6 +1,6 @@
 import { CheckCircle, XCircle } from 'lucide-react'
 import { fmt } from '../../../../shared/utils'
-import type { TransferMode, TransferResult, TransferStep } from '../types'
+import type { TransferMode, TransferRecipientType, TransferResult, TransferStep } from '../types'
 
 type TransferStatusCardProps = {
   mode: TransferMode
@@ -10,6 +10,13 @@ type TransferStatusCardProps = {
 }
 
 export function TransferStatusCard({ mode, step, result, onReset }: TransferStatusCardProps) {
+  const recipientLabel = (() => {
+    const type = result?.recipientType as TransferRecipientType | undefined
+    if (type === 'email') return 'email'
+    if (type === 'phone') return 'phone'
+    return 'User ID'
+  })()
+
   if (step === 'success') {
     return (
       <div className="card animate-slide-up p-8 text-center">
@@ -22,7 +29,7 @@ export function TransferStatusCard({ mode, step, result, onReset }: TransferStat
         <p className="mb-1 text-3xl font-black" style={{ color: 'var(--brand)' }}>{fmt.currency(result?.amount)}</p>
         <p className="mb-6 text-sm" style={{ color: 'var(--text-muted)' }}>
           {mode === 'transfer'
-            ? `Successfully sent to User #${result?.receiverId}`
+            ? `Successfully sent to ${recipientLabel === 'User ID' ? `${recipientLabel} ${result?.recipientValue}` : result?.recipientValue}`
             : 'Your withdrawal request was submitted successfully'}
         </p>
         <button onClick={onReset} className="btn-primary w-full">

@@ -25,6 +25,31 @@ const getUsersFromResponse = (payload) => {
   return { content: [], number: 0, totalPages: 0 }
 }
 
+const normalizeKycStatus = (value) => {
+  if (!value || typeof value !== 'string') return undefined
+  const cleaned = value.trim()
+  if (!cleaned) return undefined
+  return cleaned.toUpperCase().replace(/\s+/g, '_')
+}
+
+const resolveKycStatus = (user) => {
+  if (!user) return undefined
+  return normalizeKycStatus(
+    user.kycStatus ??
+    user.kyc_status ??
+    user.kyc?.status ??
+    user.kyc?.kycStatus ??
+    user.kyc?.state ??
+    user.kyc?.kyc_status
+  )
+}
+
+const normalizeUser = (user) => {
+  if (!user || typeof user !== 'object') return user
+  const kycStatus = resolveKycStatus(user)
+  return kycStatus ? { ...user, kycStatus } : user
+}
+
 export default function AdminUsers() {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -61,7 +86,8 @@ export default function AdminUsers() {
         res = await adminAPI.listUsers({ page: pageNum, size: 20, status: filters.status || undefined })
       }
       const data = getUsersFromResponse(res.data)
-      setUsers(data.content || [])
+      const normalized = (data.content || []).map(normalizeUser)
+      setUsers(normalized)
       setPage({ current: data.number || 0, total: data.totalPages || 0 })
     } finally { setLoading(false) }
   }, [filters, searchMode, throttledSearch])
@@ -75,7 +101,7 @@ export default function AdminUsers() {
     setSelectedUserLoading(true)
     try {
       const res = await adminAPI.getUser(row.id)
-      setSelectedUser(res.data?.data || res.data || row)
+      setSelectedUser(normalizeUser(res.data?.data || res.data || row))
     } catch {
       toast.error('Failed to load latest user details')
     } finally {

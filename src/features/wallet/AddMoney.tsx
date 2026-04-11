@@ -13,11 +13,29 @@ import { downloadAddMoneyReceipt } from './add-money/utils'
 
 const ADD_MONEY_COOLDOWN_MS = 5000
 
+function getErrorMessage(error: unknown, fallback: string) {
+  const responseData = (error as {
+    response?: {
+      data?: string | { message?: string }
+    }
+  })?.response?.data
+
+  if (typeof responseData === 'string' && responseData.trim()) {
+    return responseData
+  }
+
+  if (typeof responseData?.message === 'string' && responseData.message.trim()) {
+    return responseData.message
+  }
+
+  return fallback
+}
+
 export default function AddMoney() {
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState<AddMoneyStep>('form')
   const [amount, setAmount] = useState('')
-  const [method, setMethod] = useState('upi')
+  const [method, setMethod] = useState('card')
   const [txResult, setTxResult] = useState<AddMoneyResult>(null)
   const [razorpayLoaded, setRazorpayLoaded] = useState(false)
   const {
@@ -40,7 +58,7 @@ export default function AddMoney() {
     const script = document.createElement('script')
     script.src = 'https://checkout.razorpay.com/v1/checkout.js'
     script.onload = () => setRazorpayLoaded(true)
-    script.onerror = () => toast.error('Failed to load payment gateway')
+    script.onerror = () => toast.error('Payment service down. Try again after some time')
     document.body.appendChild(script)
   }, [])
 
@@ -54,6 +72,37 @@ export default function AddMoney() {
     return () => window.clearTimeout(timeoutId);
   }, [step, successOpen])
 
+  const reportFailedPayment = async (
+    formAmount: AddMoneyFormData['amount'],
+    failure: {
+      razorpayOrderId?: string
+      razorpayPaymentId?: string
+      errorMessage?: string
+    },
+  ) => {
+    const description = failure.errorMessage || 'Payment failed. Try again after some time'
+
+    setTxResult({
+      amount: formAmount,
+      status: 'FAILED',
+      error: description,
+    })
+    setStep('failed')
+
+    try {
+      if (!failure.razorpayOrderId) {
+        return
+      }
+
+      await walletAPI.markPaymentFailed({
+        razorpayOrderId: failure.razorpayOrderId,
+        razorpayPaymentId: failure.razorpayPaymentId,
+      })
+    } catch {
+      // The UI should still reflect the payment failure even if failure logging fails.
+    }
+  }
+
   const onSubmit = async (data: AddMoneyFormData) => {
     if (loading) return
     if (paymentCooldown.isCoolingDown) {
@@ -61,23 +110,60 @@ export default function AddMoney() {
       return
     }
     if (!razorpayLoaded) {
-      toast.error('Payment gateway not loaded. Please refresh and try again.')
+      toast.error('Payment service down. Try again after some time')
       return
     }
     paymentCooldown.start(ADD_MONEY_COOLDOWN_MS)
     setLoading(true)
     setStep('processing')
     try {
+      let razorpayOrderId: string | undefined
+      const originalAlert = window.alert
+      let alertHandled = false
+      const restoreAlert = () => {
+        if (window.alert !== originalAlert) {
+          window.alert = originalAlert
+        }
+      }
+      const handleAlertFailure = (message?: unknown) => {
+        if (alertHandled) return
+        alertHandled = true
+        void reportFailedPayment(data.amount, {
+          razorpayOrderId,
+          errorMessage: typeof message === 'string' && message.trim()
+            ? message
+            : 'Payment failed. Try again after some time',
+        })
+        setLoading(false)
+        toast.error('Payment failed. Try again after some time')
+      }
+
+      window.alert = (msg?: unknown) => {
+        const text = typeof msg === 'string' ? msg.toLowerCase() : ''
+        if (text.includes('payment') || text.includes('razorpay') || text.includes('oops')) {
+          handleAlertFailure(msg)
+          return
+        }
+        originalAlert(msg as string)
+      }
+
       const orderRes = await walletAPI.createOrder(Number(data.amount))
       const orderData = orderRes.data
+      razorpayOrderId = orderData.orderId
 
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-        amount: orderData.amount,
+        amount: orderData['amount(paise)'] || orderData.amount,
         currency: orderData.currency || 'INR',
         name: 'WalletPay',
         description: 'Add Money to Wallet',
-        order_id: orderData.id || orderData.orderId,
+        order_id: orderData.orderId,
+        method: {
+          card: method === 'card',
+          netbanking: method === 'netbanking',
+          upi: false,
+          wallet: false,
+        },
         retry: {
           enabled: false,
         },
@@ -87,11 +173,13 @@ export default function AddMoney() {
               razorpayOrderId: response.razorpay_order_id,
               razorpayPaymentId: response.razorpay_payment_id,
               razorpaySignature: response.razorpay_signature,
-            });
+            })
             setTxResult({
               amount: data.amount,
               status: 'SUCCESS',
-              ref: verifyRes.data?.referenceId || `TXN${Date.now()}`,
+              ref: typeof verifyRes.data === 'string' && verifyRes.data.trim()
+                ? verifyRes.data
+                : verifyRes.data?.referenceId || `TXN${Date.now()}`,
             })
             setStep('success')
             setSuccessOpen(true)
@@ -102,15 +190,13 @@ export default function AddMoney() {
               href: '/transactions',
             })
           } catch (err) {
-            setTxResult({
-              amount: data.amount,
-              status: 'FAILED',
-              error: typeof err.response?.data === 'string'
-                ? err.response.data
-                : err.response?.data?.message || 'Verification failed',
+            await reportFailedPayment(data.amount, {
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              errorMessage: getErrorMessage(err, 'Verification failed'),
             })
-            setStep('failed')
           } finally {
+            restoreAlert()
             setLoading(false)
           }
         },
@@ -123,30 +209,54 @@ export default function AddMoney() {
         },
         modal: {
           ondismiss: function () {
+            restoreAlert()
             setStep('form')
             setLoading(false)
             toast.error('Payment cancelled')
           },
           onfailure: function () {
-            setStep('failed')
+            restoreAlert()
             setLoading(false)
-            setTxResult({
-              amount: data.amount,
-              status: 'FAILED',
-              error: 'Payment failed',
+            void reportFailedPayment(data.amount, {
+              razorpayOrderId,
+              errorMessage: 'Payment failed',
             })
             toast.error('Payment failed')
           },
         },
       }
 
-      const rzp = new window.Razorpay(options)
-      rzp.open()
+      try {
+        const rzp = new window.Razorpay(options)
+        if (typeof rzp.on === 'function') {
+          rzp.on('payment.failed', (response) => {
+            void reportFailedPayment(data.amount, {
+              razorpayOrderId: response?.razorpay_order_id || razorpayOrderId,
+              razorpayPaymentId: response?.razorpay_payment_id,
+              errorMessage: response?.error?.description || 'Payment failed. Try again after some time',
+            })
+            setLoading(false)
+            toast.error('Payment failed. Try again after some time')
+            restoreAlert()
+          })
+        }
+        rzp.open()
+      } catch {
+        restoreAlert()
+        setStep('failed')
+        setLoading(false)
+        setTxResult({
+          amount: data.amount,
+          status: 'FAILED',
+          error: 'Payment service down. Try again after some time',
+        })
+        toast.error('Payment service down. Try again after some time')
+      }
     } catch (err) {
       setTxResult({
         amount: data.amount,
         status: 'FAILED',
-        error: err.response?.data?.message || 'Order creation failed',
+        error: getErrorMessage(err, 'Order creation failed'),
       })
       setStep('failed')
       setLoading(false)

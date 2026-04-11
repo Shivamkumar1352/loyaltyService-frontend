@@ -1,6 +1,6 @@
 import { ArrowLeftRight } from 'lucide-react'
 import { fmt } from '../../../../shared/utils'
-import type { TransferFormData, TransferMode } from '../types'
+import type { TransferFormData, TransferMode, TransferRecipientType } from '../types'
 
 type TransferConfirmCardProps = {
   mode: TransferMode
@@ -12,6 +12,15 @@ type TransferConfirmCardProps = {
 }
 
 export function TransferConfirmCard({ mode, formData, loading, cooldownSeconds, onBack, onConfirm }: TransferConfirmCardProps) {
+  const recipientLabel = (() => {
+    const type = formData?.recipientType as TransferRecipientType | undefined
+    if (type === 'email') return 'To (Email)'
+    if (type === 'phone') return 'To (Phone)'
+    return 'To (User ID)'
+  })()
+
+  const recipientValue = formData?.recipientValue?.trim() || '—'
+
   return (
     <div className="animate-slide-up space-y-4">
       <div className="card p-6">
@@ -26,7 +35,7 @@ export function TransferConfirmCard({ mode, formData, loading, cooldownSeconds, 
         </h3>
         <div className="space-y-3">
           {[
-            ...(mode === 'transfer' ? [['To (User ID)', formData?.receiverId]] : [['Withdrawal Note', formData?.destination || '—']]),
+            ...(mode === 'transfer' ? [[recipientLabel, recipientValue]] : [['Withdrawal Note', formData?.destination || '—']]),
             ['Amount', fmt.currency(formData?.amount)],
             ['Note', formData?.description || '—'],
           ].map(([key, value]) => (

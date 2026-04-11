@@ -5,6 +5,7 @@ import { Eye, EyeOff, Sun, Moon } from 'lucide-react'
 import { authAPI } from '../../core/api'
 import { useThemeStore } from '../../store'
 import toast from 'react-hot-toast'
+import { validateEmail, validateOtp, validatePassword, validatePhone } from './authUtils'
 
 export default function Signup() {
   const [showPwd, setShowPwd] = useState(false)
@@ -96,7 +97,14 @@ export default function Signup() {
                   className="input-field"
                   placeholder="Jane Smith"
                   title="Enter your full legal name"
-                  {...register('fullName', { required: 'Name required', minLength: { value: 2, message: 'Min 2 chars' } })} />
+                  {...register('fullName', {
+                    validate: (value) => {
+                      const trimmed = (value || '').trim()
+                      if (!trimmed) return 'Name required'
+                      if (trimmed.length < 2) return 'Min 2 chars'
+                      return /^[A-Za-z][A-Za-z\s'.-]*$/.test(trimmed) || 'Enter a valid full name'
+                    }
+                  })} />
                 {errors.fullName && (
                   <p className="text-xs text-red-500 mt-1">
                     {String((errors.fullName.message as any)?.message ?? errors.fullName.message)}
@@ -110,7 +118,7 @@ export default function Signup() {
                   type="email"
                   placeholder="you@example.com"
                   title="Enter a valid email address"
-                  {...register('email', { required: 'Email required' })} />
+                  {...register('email', { validate: validateEmail })} />
                 {errors.email && (
                   <p className="text-xs text-red-500 mt-1">
                     {String((errors.email.message as any)?.message ?? errors.email.message)}
@@ -124,7 +132,7 @@ export default function Signup() {
                   type="tel"
                   placeholder="9876543210"
                   title="Enter your phone number (10 digits)"
-                  {...register('phone', { required: 'Phone required', pattern: { value: /^[0-9]{10}$/, message: 'must be exactly 10 digits' } })} />
+                  {...register('phone', { validate: validatePhone })} />
                 {errors.phone && (
                   <p className="text-xs text-red-500 mt-1">
                     {String((errors.phone.message as any)?.message ?? errors.phone.message)}
@@ -139,11 +147,7 @@ export default function Signup() {
                     type={showPwd ? 'text' : 'password'}
                     placeholder="Min 8 chars"
                     title="Password with at least 8 characters, including upper, lower, number, and symbol"
-                    {...register('password', {
-                      required: 'Password required',
-                      minLength: { value: 8, message: 'Min 8 characters' },
-                      pattern: { value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/, message: 'Need upper, lower, number & symbol' }
-                    })} />
+                    {...register('password', { validate: validatePassword })} />
                   <button
                     type="button"
                     onClick={() => setShowPwd(!showPwd)}
@@ -168,8 +172,10 @@ export default function Signup() {
                   placeholder="Re-enter password"
                   title="Re-enter the same password for confirmation"
                   {...register('confirm', {
-                    required: 'Please confirm password',
-                    validate: (v) => v === watch('password') || 'Passwords do not match'
+                    validate: (value) => {
+                      if (!value?.trim()) return 'Please confirm password'
+                      return value === watch('password') || 'Passwords do not match'
+                    }
                   })} />
                 {errors.confirm && (
                   <p className="text-xs text-red-500 mt-1">
@@ -193,7 +199,7 @@ export default function Signup() {
                   maxLength={8}
                   placeholder="······"
                   title="Enter the OTP sent to your email"
-                  {...regOtp('otp', { required: 'OTP required', minLength: { value: 4, message: 'Min 4 digits' } })} />
+                  {...regOtp('otp', { validate: validateOtp })} />
                 {eOtp.otp && (
                   <p className="text-xs text-red-500 mt-1">
                     {String((eOtp.otp.message as any)?.message ?? eOtp.otp.message)}
