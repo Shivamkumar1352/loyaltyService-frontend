@@ -140,10 +140,10 @@ export default function AdminKyc() {
       <Pagination page={page.current} totalPages={page.total} onChange={load} />
 
       {/* View KYC Modal */}
-      <Modal open={!!viewModal} onClose={() => setViewModal(null)} title="KYC Submission Details" size="lg">
+      <Modal open={!!viewModal} onClose={() => setViewModal(null)} title="KYC Submission Details" size="xl">
         {viewModal && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="space-y-4 max-h-[calc(90vh-8rem)] overflow-y-auto pr-1">
+            <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
               {[
                 ['KYC ID', `#${viewModal.kycId || viewModal.id}`],
                 ['User', viewModal.userName],
@@ -165,7 +165,10 @@ export default function AdminKyc() {
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <p className="label mb-0">Document Preview</p>
                 </div>
-                <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border)', background: 'var(--bg-tertiary)' }}>
+                <div
+                  className="rounded-2xl overflow-hidden"
+                  style={{ border: '1px solid var(--border)', background: 'var(--bg-tertiary)' }}
+                >
                   {isImageFile(viewModal.docFilePath) ? (
                     <a
                       href={viewModal.docFilePath}
@@ -177,14 +180,14 @@ export default function AdminKyc() {
                       <img
                         src={viewModal.docFilePath}
                         alt={`${viewModal.docType} document`}
-                        className="w-full h-80 sm:h-[28rem] object-contain bg-white"
+                        className="w-full min-h-[24rem] max-h-[72vh] object-contain bg-white"
                       />
                     </a>
                   ) : (
                     <iframe
                       src={viewModal.docFilePath}
                       title="KYC document preview"
-                      className="w-full h-80 sm:h-[28rem] bg-white"
+                      className="w-full h-[72vh] min-h-[24rem] bg-white"
                     />
                   )}
                 </div>
