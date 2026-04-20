@@ -122,6 +122,125 @@
     background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--border) 50%, var(--bg-tertiary) 75%);
     background-size: 200% 100%;
   }
+
+  .auth-shell {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    background:
+      radial-gradient(circle at top left, rgba(22, 179, 110, 0.1), transparent 28%),
+      radial-gradient(circle at bottom right, rgba(8, 145, 89, 0.12), transparent 24%),
+      linear-gradient(180deg, var(--bg-primary) 0%, color-mix(in srgb, var(--bg-primary) 86%, white 14%) 100%);
+  }
+
+  .dark .auth-shell {
+    background:
+      radial-gradient(circle at top left, rgba(59, 207, 136, 0.14), transparent 30%),
+      radial-gradient(circle at bottom right, rgba(22, 179, 110, 0.18), transparent 24%),
+      linear-gradient(180deg, #081018 0%, #0c0f14 100%);
+  }
+
+  .auth-panel {
+    position: relative;
+    border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 96%, white 4%) 0%, var(--bg-secondary) 100%);
+    box-shadow:
+      0 24px 70px rgba(15, 23, 42, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    backdrop-filter: blur(18px);
+  }
+
+  .dark .auth-panel {
+    background:
+      linear-gradient(180deg, rgba(20, 25, 32, 0.94) 0%, rgba(15, 20, 26, 0.98) 100%);
+    box-shadow:
+      0 28px 80px rgba(2, 6, 23, 0.48),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+
+  .auth-kicker {
+    @apply inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em];
+    background: color-mix(in srgb, var(--brand) 10%, var(--bg-secondary) 90%);
+    color: color-mix(in srgb, var(--brand) 72%, var(--text-primary) 28%);
+    border: 1px solid color-mix(in srgb, var(--brand) 18%, transparent);
+  }
+
+  .auth-toggle {
+    position: relative;
+    border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--bg-tertiary) 72%, white 28%) 0%, var(--bg-tertiary) 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  }
+
+  .dark .auth-toggle {
+    background:
+      linear-gradient(180deg, rgba(26, 33, 48, 0.94) 0%, rgba(18, 24, 36, 0.94) 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+
+  .auth-toggle-option {
+    @apply min-h-[48px] flex-1 rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200;
+    color: var(--text-muted);
+  }
+
+  .auth-toggle-option.is-active {
+    color: white;
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--brand) 92%, white 8%) 0%, var(--brand-dark) 100%);
+    box-shadow:
+      0 12px 24px rgba(22, 179, 110, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    transform: translateY(-1px);
+  }
+
+  .auth-field {
+    position: relative;
+  }
+
+  .auth-field .input-field {
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 52%, var(--bg-tertiary) 48%) 0%, var(--bg-tertiary) 100%);
+    border-color: color-mix(in srgb, var(--border) 84%, transparent);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+
+  .dark .auth-field .input-field {
+    background:
+      linear-gradient(180deg, rgba(26, 33, 48, 0.98) 0%, rgba(18, 24, 36, 0.96) 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+  }
+
+  .auth-field .input-field:focus {
+    box-shadow:
+      0 0 0 4px rgba(22, 179, 110, 0.12),
+      0 14px 28px rgba(22, 179, 110, 0.1);
+  }
+
+  .auth-icon {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+    transition: color 150ms ease;
+  }
+
+  .auth-field:focus-within .auth-icon {
+    color: var(--brand);
+  }
+
+  .auth-info {
+    border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--bg-tertiary) 60%, white 40%) 0%, var(--bg-tertiary) 100%);
+  }
+
+  .dark .auth-info {
+    background:
+      linear-gradient(180deg, rgba(26, 33, 48, 0.95) 0%, rgba(18, 24, 36, 0.95) 100%);
+  }
 }
 
 @media (min-width: 640px) {
@@ -184,6 +303,30 @@
   .landing-float {
     animation: floatCard 7s ease-in-out infinite;
     transform-origin: center;
+  }
+
+  .auth-glow {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(70px);
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  .auth-glow-1 {
+    top: -4rem;
+    right: -3rem;
+    height: 12rem;
+    width: 12rem;
+    background: rgba(22, 179, 110, 0.18);
+  }
+
+  .auth-glow-2 {
+    bottom: -5rem;
+    left: -3rem;
+    height: 14rem;
+    width: 14rem;
+    background: rgba(14, 165, 233, 0.1);
   }
 }
 

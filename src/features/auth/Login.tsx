@@ -120,7 +120,9 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen min-h-[100dvh] overflow-x-clip" style={{ background: 'var(--bg-primary)' }}>
+    <div className="auth-shell flex min-h-screen min-h-[100dvh] overflow-x-clip">
+      <div className="auth-glow auth-glow-1" />
+      <div className="auth-glow auth-glow-2" />
       {/* Left panel */}
       <div className="hidden lg:flex flex-col justify-between w-[45%] p-12 relative overflow-hidden"
         style={{ background: 'linear-gradient(135deg, #042a1d 0%, #097349 50%, #16b36e 100%)' }}>
@@ -150,11 +152,11 @@ export default function Login() {
       </div>
 
       {/* Right panel */}
-      <div className="flex flex-1 flex-col items-center justify-center px-3 py-4 sm:px-6 sm:py-6 lg:p-12">
-        <div className="w-full max-w-sm rounded-[28px] border px-4 py-5 shadow-sm sm:px-6 sm:py-6 lg:max-w-md lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none"
-          style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
-          <div className="mb-8 flex items-center justify-between gap-3">
-            <div>
+      <div className="relative flex flex-1 flex-col items-center justify-center px-3 py-4 sm:px-6 sm:py-6 lg:p-12">
+        <div className="auth-panel w-full max-w-sm rounded-[32px] px-4 py-5 sm:px-6 sm:py-6 lg:max-w-md lg:px-7 lg:py-7">
+          <div className="mb-8 flex items-start justify-between gap-3">
+            <div className="space-y-3">
+              <span className="auth-kicker">Secure Access</span>
               <h2 className="font-black text-2xl mb-0.5" style={{ color: 'var(--text-primary)' }}>Sign in</h2>
               <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Welcome back to Batua</p>
             </div>
@@ -169,12 +171,11 @@ export default function Login() {
           </div>
 
           {/* Mode toggle */}
-          <div className="mb-6 flex gap-1 rounded-xl p-1" style={{ background: 'var(--bg-tertiary)' }}>
+          <div className="auth-toggle mb-6 flex gap-1 rounded-2xl p-1.5">
             <button
               type="button"
               onClick={() => { setMode('password'); setOtpStep('enter_id'); setIdentifier(''); setValue('otp', '') }}
-              className={`min-h-[44px] flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${mode === 'password' ? 'text-white shadow-sm' : ''}`}
-              style={mode === 'password' ? { background: 'var(--brand)' } : { color: 'var(--text-muted)' }}
+              className={`auth-toggle-option ${mode === 'password' ? 'is-active' : ''}`}
             >
               <div className="inline-flex items-center gap-2 justify-center">
                 <KeyRound size={15} /> Password
@@ -183,8 +184,7 @@ export default function Login() {
             <button
               type="button"
               onClick={() => { setMode('otp'); setOtpStep('enter_id'); setIdentifier(''); setValue('password', '') }}
-              className={`min-h-[44px] flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${mode === 'otp' ? 'text-white shadow-sm' : ''}`}
-              style={mode === 'otp' ? { background: 'var(--brand)' } : { color: 'var(--text-muted)' }}
+              className={`auth-toggle-option ${mode === 'otp' ? 'is-active' : ''}`}
             >
               <div className="inline-flex items-center gap-2 justify-center">
                 <MessageSquareText size={15} /> OTP
@@ -196,8 +196,8 @@ export default function Login() {
             <form onSubmit={handleSubmit(onPasswordLogin)} className="space-y-4">
               <div>
                 <label className="label">Email or phone</label>
-                <div className="relative">
-                  <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 opacity-40" />
+                <div className="auth-field">
+                  <Mail size={15} className="auth-icon left-3" />
                   <input
                     className="input-field pl-9"
                     placeholder="you@example.com or 9876543210"
@@ -205,13 +205,13 @@ export default function Login() {
                     title="Enter your registered email address or phone number"
                     {...register('identifier', { validate: validateIdentifier })}
                   />
-                  <Phone size={15} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-30" />
+                  <Phone size={15} className="auth-icon right-3 opacity-70" />
                 </div>
                 {errors.identifier && <p className="text-xs text-red-500 mt-1">{String(errors.identifier.message)}</p>}
               </div>
               <div>
                 <label className="label">Password</label>
-                <div className="relative">
+                <div className="auth-field">
                   <input
                     className="input-field pr-10"
                     type={showPwd ? 'text' : 'password'}
@@ -247,16 +247,16 @@ export default function Login() {
               {otpStep === 'enter_id' ? (
                 <form onSubmit={handleSubmit(onSendOtp)} className="space-y-4">
                   <div>
-                    <label className="label">Email address</label>
-                    <div className="relative">
-                      <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 opacity-40" />
+                    <label className="label">Email or phone</label>
+                    <div className="auth-field">
+                      <Mail size={15} className="auth-icon left-3" />
                       <input
                         className="input-field pl-9"
                         placeholder="you@example.com or 9876543210"
                         title="Enter email or phone to receive OTP"
                         {...register('identifier', { validate: validateIdentifier })}
                       />
-                      {/* <Phone size={15} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-30" /> */}
+                      <Phone size={15} className="auth-icon right-3 opacity-70" />
                     </div>
                     {errors.identifier && <p className="text-xs text-red-500 mt-1">{String(errors.identifier.message)}</p>}
                   </div>
@@ -266,8 +266,8 @@ export default function Login() {
                 </form>
               ) : (
                 <form onSubmit={handleSubmit(onVerifyOtpLogin)} className="space-y-4">
-                  <div className="rounded-xl p-3 text-xs break-all"
-                    style={{ background: 'var(--bg-tertiary)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+                  <div className="auth-info rounded-2xl p-3 text-xs break-all"
+                    style={{ color: 'var(--text-muted)' }}>
                     OTP sent to <span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>{identifier}</span>
                   </div>
                   <div>
