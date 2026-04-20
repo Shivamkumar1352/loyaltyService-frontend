@@ -57,12 +57,18 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div
-          className="absolute right-0 mt-2 w-[92vw] max-w-sm overflow-hidden rounded-2xl border shadow-2xl animate-slide-up sm:w-[24rem]"
-          style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
-          role="dialog"
-          aria-label="Notification center"
-        >
+        <>
+          <div
+            className="fixed inset-0 z-30 bg-black/30 backdrop-blur-[1px] sm:hidden"
+            onClick={() => setOpen(false)}
+            aria-hidden="true"
+          />
+          <div
+            className="fixed inset-x-3 top-[4.5rem] z-40 max-h-[calc(100dvh-5.5rem)] overflow-hidden rounded-2xl border shadow-2xl animate-slide-up sm:absolute sm:right-0 sm:top-auto sm:mt-2 sm:w-[24rem] sm:max-h-[60vh] sm:inset-x-auto"
+            style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
+            role="dialog"
+            aria-label="Notification center"
+          >
           <div className="px-4 py-3 flex items-center justify-between border-b"
             style={{ borderColor: 'var(--border)' }}>
             <div>
@@ -91,7 +97,7 @@ export default function NotificationBell() {
               <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>You’ll see updates about payments, rewards, and security here.</p>
             </div>
           ) : (
-            <div className="max-h-[60vh] overflow-y-auto divide-y" style={{ borderColor: 'var(--border)' }}>
+            <div className="max-h-[calc(100dvh-10rem)] overflow-y-auto divide-y sm:max-h-[60vh]" style={{ borderColor: 'var(--border)' }}>
               {topItems.map((n) => {
                 const s = severityStyles(n.severity)
                 const Row = (
@@ -100,9 +106,9 @@ export default function NotificationBell() {
                       <div className={clsx('w-2.5 h-2.5 rounded-full', s.dot)} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold truncate" style={{ color: 'var(--text-primary)' }}>{n.title}</p>
+                      <p className="text-sm font-bold break-words" style={{ color: 'var(--text-primary)' }}>{n.title}</p>
                       {n.message && (
-                        <p className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--text-muted)' }}>{n.message}</p>
+                        <p className="text-xs mt-0.5 break-words line-clamp-3 sm:line-clamp-2" style={{ color: 'var(--text-muted)' }}>{n.message}</p>
                       )}
                       <p className={clsx('text-[11px] mt-1 font-semibold', s.text)}>
                         {fmt.datetime(n.createdAt)}
@@ -132,7 +138,8 @@ export default function NotificationBell() {
               })}
             </div>
           )}
-        </div>
+          </div>
+        </>
       )}
     </div>
   )

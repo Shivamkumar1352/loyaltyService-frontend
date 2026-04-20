@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Users, UserCheck, UserX, Clock, RefreshCw, Gift } from 'lucide-react'
+import { Users, UserCheck, UserX, Clock, RefreshCw } from 'lucide-react'
 import { adminAPI } from '../../core/api'
 import { fmt } from '../../shared/utils'
-import { Skeleton, StatCard, Modal } from '../../shared/components'
+import { Skeleton, StatCard } from '../../shared/components'
 import {
   Tooltip,
   ResponsiveContainer,
@@ -18,26 +18,10 @@ import {
   AreaChart,
   Area,
 } from 'recharts'
-import toast from 'react-hot-toast'
-
-const REWARD_TYPES = ['CASHBACK', 'COUPON', 'VOUCHER']
-const REWARD_TIERS = ['', 'SILVER', 'GOLD', 'PLATINUM']
-const EMPTY_REWARD_FORM = {
-  name: '',
-  description: '',
-  type: 'CASHBACK',
-  pointsRequired: '',
-  stock: '',
-  tierRequired: '',
-  cashbackAmount: '',
-}
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [addRewardOpen, setAddRewardOpen] = useState(false)
-  const [addingReward, setAddingReward] = useState(false)
-  const [rewardForm, setRewardForm] = useState(EMPTY_REWARD_FORM)
 
   const load = async () => {
     setLoading(true)
@@ -48,36 +32,6 @@ export default function AdminDashboard() {
   }
 
   useEffect(() => { load() }, [])
-
-  const addRewardItem = async () => {
-    if (!rewardForm.name.trim() || !rewardForm.description.trim() || !rewardForm.pointsRequired) {
-      toast.error('Fill the required reward fields')
-      return
-    }
-    if (rewardForm.type === 'CASHBACK' && !rewardForm.cashbackAmount) {
-      toast.error('Cashback amount is required for cashback rewards')
-      return
-    }
-    setAddingReward(true)
-    try {
-      await adminAPI.addRewardItem({
-        name: rewardForm.name.trim(),
-        description: rewardForm.description.trim(),
-        type: rewardForm.type,
-        pointsRequired: Number(rewardForm.pointsRequired),
-        stock: rewardForm.stock ? Number(rewardForm.stock) : undefined,
-        tierRequired: rewardForm.tierRequired || undefined,
-        cashbackAmount: rewardForm.type === 'CASHBACK' ? Number(rewardForm.cashbackAmount) : undefined,
-      })
-      toast.success('Reward item added')
-      setAddRewardOpen(false)
-      setRewardForm(EMPTY_REWARD_FORM)
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to add reward item')
-    } finally {
-      setAddingReward(false)
-    }
-  }
 
   const kycBarData = stats ? [
     { label: 'Approved', value: stats.kycApproved ?? 0, color: '#16b36e' },
@@ -107,19 +61,12 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6 animate-slide-up">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>Admin Dashboard</h1>
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Platform overview and KPIs</p>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setAddRewardOpen(true)}
-            className="btn-secondary text-sm"
-            title="Add new reward item"
-          >
-            <Gift size={14} /> Add Reward
-          </button>
+        <div className="flex shrink-0 gap-2">
           <button
             onClick={load}
             className="btn-ghost p-2 rounded-xl"
@@ -303,99 +250,6 @@ export default function AdminDashboard() {
           )}
         </div>
       </div>
-
-      <Modal open={addRewardOpen} onClose={() => setAddRewardOpen(false)} title="Add Reward Item">
-        <div className="space-y-4">
-          <div>
-            <label className="label">Reward Name</label>
-            <input
-              className="input-field"
-              value={rewardForm.name}
-              onChange={(e) => setRewardForm((prev) => ({ ...prev, name: e.target.value }))}
-              placeholder="Weekend cashback"
-            />
-          </div>
-          <div>
-            <label className="label">Description</label>
-            <textarea
-              className="input-field resize-none h-24"
-              value={rewardForm.description}
-              onChange={(e) => setRewardForm((prev) => ({ ...prev, description: e.target.value }))}
-              placeholder="Visible in the rewards catalog"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label">Type</label>
-              <select
-                className="input-field"
-                value={rewardForm.type}
-                onChange={(e) => setRewardForm((prev) => ({
-                  ...prev,
-                  type: e.target.value,
-                  cashbackAmount: e.target.value === 'CASHBACK' ? prev.cashbackAmount : '',
-                }))}
-              >
-                {REWARD_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label">Points Required</label>
-              <input
-                className="input-field"
-                type="number"
-                min="1"
-                value={rewardForm.pointsRequired}
-                onChange={(e) => setRewardForm((prev) => ({ ...prev, pointsRequired: e.target.value }))}
-                placeholder="100"
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label">Stock</label>
-              <input
-                className="input-field"
-                type="number"
-                min="0"
-                value={rewardForm.stock}
-                onChange={(e) => setRewardForm((prev) => ({ ...prev, stock: e.target.value }))}
-                placeholder="Leave blank for unlimited"
-              />
-            </div>
-            <div>
-              <label className="label">Tier Required</label>
-              <select
-                className="input-field"
-                value={rewardForm.tierRequired}
-                onChange={(e) => setRewardForm((prev) => ({ ...prev, tierRequired: e.target.value }))}
-              >
-                {REWARD_TIERS.map((tier) => <option key={tier || 'ALL'} value={tier}>{tier || 'All tiers'}</option>)}
-              </select>
-            </div>
-          </div>
-          {rewardForm.type === 'CASHBACK' && (
-            <div>
-              <label className="label">Cashback Amount</label>
-              <input
-                className="input-field"
-                type="number"
-                min="1"
-                step="0.01"
-                value={rewardForm.cashbackAmount}
-                onChange={(e) => setRewardForm((prev) => ({ ...prev, cashbackAmount: e.target.value }))}
-                placeholder="50"
-              />
-            </div>
-          )}
-          <div className="flex gap-3">
-            <button onClick={() => setAddRewardOpen(false)} className="btn-secondary flex-1">Cancel</button>
-            <button onClick={addRewardItem} disabled={addingReward} className="btn-primary flex-1">
-              {addingReward ? 'Saving…' : 'Add Reward'}
-            </button>
-          </div>
-        </div>
-      </Modal>
     </div>
   )
 }

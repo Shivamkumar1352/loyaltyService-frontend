@@ -120,7 +120,7 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen min-h-[100dvh]" style={{ background: 'var(--bg-primary)' }}>
+    <div className="flex min-h-screen min-h-[100dvh] overflow-x-clip" style={{ background: 'var(--bg-primary)' }}>
       {/* Left panel */}
       <div className="hidden lg:flex flex-col justify-between w-[45%] p-12 relative overflow-hidden"
         style={{ background: 'linear-gradient(135deg, #042a1d 0%, #097349 50%, #16b36e 100%)' }}>
@@ -150,8 +150,9 @@ export default function Login() {
       </div>
 
       {/* Right panel */}
-      <div className="flex flex-1 flex-col items-center justify-center px-4 py-6 sm:px-6 lg:p-12">
-        <div className="w-full max-w-sm">
+      <div className="flex flex-1 flex-col items-center justify-center px-3 py-4 sm:px-6 sm:py-6 lg:p-12">
+        <div className="w-full max-w-sm rounded-[28px] border px-4 py-5 shadow-sm sm:px-6 sm:py-6 lg:max-w-md lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none"
+          style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
           <div className="mb-8 flex items-center justify-between gap-3">
             <div>
               <h2 className="font-black text-2xl mb-0.5" style={{ color: 'var(--text-primary)' }}>Sign in</h2>
@@ -172,7 +173,7 @@ export default function Login() {
             <button
               type="button"
               onClick={() => { setMode('password'); setOtpStep('enter_id'); setIdentifier(''); setValue('otp', '') }}
-              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${mode === 'password' ? 'text-white shadow-sm' : ''}`}
+              className={`min-h-[44px] flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${mode === 'password' ? 'text-white shadow-sm' : ''}`}
               style={mode === 'password' ? { background: 'var(--brand)' } : { color: 'var(--text-muted)' }}
             >
               <div className="inline-flex items-center gap-2 justify-center">
@@ -182,7 +183,7 @@ export default function Login() {
             <button
               type="button"
               onClick={() => { setMode('otp'); setOtpStep('enter_id'); setIdentifier(''); setValue('password', '') }}
-              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${mode === 'otp' ? 'text-white shadow-sm' : ''}`}
+              className={`min-h-[44px] flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${mode === 'otp' ? 'text-white shadow-sm' : ''}`}
               style={mode === 'otp' ? { background: 'var(--brand)' } : { color: 'var(--text-muted)' }}
             >
               <div className="inline-flex items-center gap-2 justify-center">
@@ -265,7 +266,7 @@ export default function Login() {
                 </form>
               ) : (
                 <form onSubmit={handleSubmit(onVerifyOtpLogin)} className="space-y-4">
-                  <div className="rounded-xl p-3 text-xs"
+                  <div className="rounded-xl p-3 text-xs break-all"
                     style={{ background: 'var(--bg-tertiary)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
                     OTP sent to <span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>{identifier}</span>
                   </div>
@@ -283,7 +284,7 @@ export default function Login() {
                   <button type="submit" disabled={loading || loginCooldown.isCoolingDown} className="btn-primary w-full">
                     {loading ? 'Verifying…' : loginCooldown.isCoolingDown ? `Wait ${loginCooldown.remainingSeconds}s` : 'Verify & Sign in'}
                   </button>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row">
                     <button
                       type="button"
                       onClick={() => { setOtpStep('enter_id'); setIdentifier(''); setValue('otp', '') }}
