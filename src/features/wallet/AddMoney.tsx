@@ -24,7 +24,12 @@ function getErrorMessage(error: unknown, fallback: string) {
     return responseData
   }
 
-  if (typeof responseData?.message === 'string' && responseData.message.trim()) {
+  if (
+    responseData &&
+    typeof responseData === 'object' &&
+    typeof responseData.message === 'string' &&
+    responseData.message.trim()
+  ) {
     return responseData.message
   }
 
@@ -35,7 +40,7 @@ export default function AddMoney() {
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState<AddMoneyStep>('form')
   const [amount, setAmount] = useState('')
-  const [method, setMethod] = useState('card')
+  const [method, setMethod] = useState('netbanking')
   const [txResult, setTxResult] = useState<AddMoneyResult>(null)
   const [razorpayLoaded, setRazorpayLoaded] = useState(false)
   const {
@@ -117,7 +122,7 @@ export default function AddMoney() {
     setLoading(true)
     setStep('processing')
     try {
-      let razorpayOrderId: string | undefined
+      const paymentState: { razorpayOrderId?: string } = {}
       const originalAlert = window.alert
       let alertHandled = false
       const restoreAlert = () => {
@@ -129,7 +134,7 @@ export default function AddMoney() {
         if (alertHandled) return
         alertHandled = true
         void reportFailedPayment(data.amount, {
-          razorpayOrderId,
+          razorpayOrderId: paymentState.razorpayOrderId,
           errorMessage: typeof message === 'string' && message.trim()
             ? message
             : 'Payment failed. Try again after some time',
@@ -149,7 +154,7 @@ export default function AddMoney() {
 
       const orderRes = await walletAPI.createOrder(Number(data.amount))
       const orderData = orderRes.data
-      razorpayOrderId = orderData.orderId
+      paymentState.razorpayOrderId = orderData.orderId
 
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
@@ -159,8 +164,8 @@ export default function AddMoney() {
         description: 'Add Money to Wallet',
         order_id: orderData.orderId,
         method: {
-          card: method === 'card',
           netbanking: method === 'netbanking',
+          card: method === 'card',
           upi: false,
           wallet: false,
         },
@@ -218,7 +223,7 @@ export default function AddMoney() {
             restoreAlert()
             setLoading(false)
             void reportFailedPayment(data.amount, {
-              razorpayOrderId,
+              razorpayOrderId: paymentState.razorpayOrderId,
               errorMessage: 'Payment failed',
             })
             toast.error('Payment failed')
@@ -231,7 +236,7 @@ export default function AddMoney() {
         if (typeof rzp.on === 'function') {
           rzp.on('payment.failed', (response) => {
             void reportFailedPayment(data.amount, {
-              razorpayOrderId: response?.razorpay_order_id || razorpayOrderId,
+              razorpayOrderId: response?.razorpay_order_id || paymentState.razorpayOrderId,
               razorpayPaymentId: response?.razorpay_payment_id,
               errorMessage: response?.error?.description || 'Payment failed. Try again after some time',
             })

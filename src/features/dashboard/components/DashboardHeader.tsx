@@ -13,7 +13,7 @@ export function DashboardHeader({ user, loading, onRefresh }: DashboardHeaderPro
       <div>
         <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>Good day,</p>
         <h1 className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>
-          {user?.fullName?.split(' ')[0] || 'Friend'} 👋
+          {user?.fullName?.split(' ')[0] || 'Friend'}
         </h1>
       </div>
       <button

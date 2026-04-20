@@ -51,7 +51,6 @@ describe('AddMoney', () => {
       }
     }
 
-    // @ts-expect-error - test mock
     window.Razorpay = RazorpayMock
 
     renderWithProviders(<AddMoney />)
@@ -103,7 +102,6 @@ describe('AddMoney', () => {
       }
     }
 
-    // @ts-expect-error - test mock
     window.Razorpay = RazorpayMock
 
     renderWithProviders(<AddMoney />)

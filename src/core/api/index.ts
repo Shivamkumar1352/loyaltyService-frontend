@@ -48,6 +48,18 @@ function isAuthRefreshRequest(config) {
   return url.includes('/api/auth/refresh') || full.includes('/api/auth/refresh')
 }
 
+function isNgrokRequest(config) {
+  const full = getRequestUrl(config)
+  if (!full) return false
+
+  try {
+    const target = new URL(full, window.location.origin)
+    return target.hostname.endsWith('ngrok-free.app')
+  } catch {
+    return full.includes('ngrok-free.app')
+  }
+}
+
 async function refreshAccessToken() {
   if (!refreshRequest) {
     const { refreshToken, setTokens } = getAuthState()
@@ -84,6 +96,10 @@ async function refreshAccessToken() {
 api.interceptors.request.use(
   (config) => {
     try {
+      if (isNgrokRequest(config)) {
+        config.headers['ngrok-skip-browser-warning'] = 'true'
+      }
+
       if (isAuthRefreshRequest(config)) {
         delete config.headers?.Authorization
         delete config.headers?.['X-User-Id']

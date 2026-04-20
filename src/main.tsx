@@ -7,6 +7,9 @@ import App from './App'
 import './styles/index.css'
 import ErrorBoundary from './shared/components/ErrorBoundary'
 import { appStore } from './store'
+import { registerServiceWorker } from './pwa/registerServiceWorker'
+
+registerServiceWorker()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
