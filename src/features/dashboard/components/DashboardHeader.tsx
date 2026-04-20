@@ -9,10 +9,10 @@ type DashboardHeaderProps = {
 
 export function DashboardHeader({ user, loading, onRefresh }: DashboardHeaderProps) {
   return (
-    <div className="flex items-center justify-between">
-      <div>
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="min-w-0">
         <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>Good day,</p>
-        <h1 className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>
+        <h1 className="truncate text-2xl font-black" style={{ color: 'var(--text-primary)' }}>
           {user?.fullName?.split(' ')[0] || 'Friend'}
         </h1>
       </div>

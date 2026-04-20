@@ -120,7 +120,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex" style={{ background: 'var(--bg-primary)' }}>
+    <div className="flex min-h-screen min-h-[100dvh]" style={{ background: 'var(--bg-primary)' }}>
       {/* Left panel */}
       <div className="hidden lg:flex flex-col justify-between w-[45%] p-12 relative overflow-hidden"
         style={{ background: 'linear-gradient(135deg, #042a1d 0%, #097349 50%, #16b36e 100%)' }}>
@@ -150,9 +150,9 @@ export default function Login() {
       </div>
 
       {/* Right panel */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 lg:p-12">
+      <div className="flex flex-1 flex-col items-center justify-center px-4 py-6 sm:px-6 lg:p-12">
         <div className="w-full max-w-sm">
-          <div className="flex items-center justify-between mb-8">
+          <div className="mb-8 flex items-center justify-between gap-3">
             <div>
               <h2 className="font-black text-2xl mb-0.5" style={{ color: 'var(--text-primary)' }}>Sign in</h2>
               <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Welcome back to Batua</p>
@@ -168,7 +168,7 @@ export default function Login() {
           </div>
 
           {/* Mode toggle */}
-          <div className="flex gap-1 p-1 rounded-xl mb-6" style={{ background: 'var(--bg-tertiary)' }}>
+          <div className="mb-6 flex gap-1 rounded-xl p-1" style={{ background: 'var(--bg-tertiary)' }}>
             <button
               type="button"
               onClick={() => { setMode('password'); setOtpStep('enter_id'); setIdentifier(''); setValue('otp', '') }}

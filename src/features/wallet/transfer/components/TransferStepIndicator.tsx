@@ -5,7 +5,7 @@ export function TransferStepIndicator({ step }: { step: TransferStep }) {
   if (step !== 'form' && step !== 'confirm') return null
 
   return (
-    <div className="mb-6 flex gap-2">
+    <div className="mb-6 flex flex-wrap gap-2">
       {TRANSFER_STEPS.map((label, index) => (
         <div key={label} className="flex items-center gap-2">
           <div

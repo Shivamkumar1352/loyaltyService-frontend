@@ -31,7 +31,7 @@ export default function PaymentSuccessOverlay({
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-6">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
       <div className="absolute inset-0"
         style={{ background: 'radial-gradient(circle at 20% 10%, rgba(255,255,255,0.18), transparent 45%), linear-gradient(135deg, #042a1d 0%, #097349 40%, #3bcf88 100%)' }}
       />
@@ -46,19 +46,20 @@ export default function PaymentSuccessOverlay({
       />
 
       <div className="relative w-full max-w-md text-center text-white">
-        <div className="mx-auto w-24 h-24 rounded-[28px] bg-white/15 backdrop-blur flex items-center justify-center shadow-2xl">
+        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[24px] bg-white/15 shadow-2xl backdrop-blur sm:h-24 sm:w-24 sm:rounded-[28px]">
           <div className="relative">
-            <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center animate-pop">
-              <Check size={34} className="text-white" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 animate-pop sm:h-16 sm:w-16">
+              <Check size={30} className="text-white sm:hidden" />
+              <Check size={34} className="hidden text-white sm:block" />
             </div>
             <div className="absolute -inset-3 rounded-full border border-white/30 animate-ring" />
             <div className="absolute -inset-6 rounded-full border border-white/15 animate-ring2" />
           </div>
         </div>
 
-        <h2 className="mt-6 text-2xl font-black tracking-tight">{title}</h2>
+        <h2 className="mt-6 text-xl font-black tracking-tight sm:text-2xl">{title}</h2>
         {amountText && (
-          <p className="mt-2 text-4xl font-black tracking-tight">{amountText}</p>
+          <p className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">{amountText}</p>
         )}
         {subtitle && (
           <p className="mt-2 text-sm text-white/80">{subtitle}</p>
@@ -97,4 +98,3 @@ export default function PaymentSuccessOverlay({
     </div>
   )
 }
-

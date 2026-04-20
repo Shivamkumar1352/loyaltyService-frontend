@@ -19,16 +19,16 @@ export function RewardsSummary({ rewards, loading }: RewardsSummaryProps) {
 
   return (
     <div className="card p-5">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between gap-3">
         <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Rewards & Loyalty</p>
         <Link to="/rewards" className="text-xs font-semibold" style={{ color: 'var(--brand)' }}>View all →</Link>
       </div>
       {loading ? (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 rounded-xl" />)}
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="text-center">
             <p className="text-xl font-black" style={{ color: 'var(--text-primary)' }}>
               {fmt.number(rewards?.points)}

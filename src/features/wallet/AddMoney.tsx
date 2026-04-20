@@ -275,7 +275,7 @@ export default function AddMoney() {
   }
 
   return (
-    <div className="max-w-md mx-auto animate-slide-up">
+    <div className="mx-auto w-full max-w-md animate-slide-up">
       <div className="mb-6">
         <h1
           className="text-2xl font-black"

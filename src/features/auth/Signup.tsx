@@ -48,7 +48,7 @@ export default function Signup() {
   }
 
   return (
-    <div className="min-h-screen flex" style={{ background: 'var(--bg-primary)' }}>
+    <div className="flex min-h-screen min-h-[100dvh]" style={{ background: 'var(--bg-primary)' }}>
       {/* Left panel */}
       <div className="hidden lg:flex flex-col justify-between w-[45%] p-12 relative overflow-hidden"
         style={{ background: 'linear-gradient(135deg, #042a1d 0%, #097349 50%, #16b36e 100%)' }}>
@@ -68,9 +68,9 @@ export default function Signup() {
       </div>
 
       {/* Right */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 lg:p-12">
+      <div className="flex flex-1 flex-col items-center justify-center px-4 py-6 sm:px-6 lg:p-12">
         <div className="w-full max-w-sm">
-          <div className="flex items-center justify-between mb-8">
+          <div className="mb-8 flex items-center justify-between gap-3">
             <div>
               <h2 className="font-black text-2xl mb-0.5" style={{ color: 'var(--text-primary)' }}>
                 {step === 'form' ? 'Create account' : 'Verify email'}

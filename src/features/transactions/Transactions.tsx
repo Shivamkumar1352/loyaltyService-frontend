@@ -193,22 +193,22 @@ export default function Transactions() {
 
   return (
       <div className="space-y-6 animate-slide-up">
-        <div className="flex items-start justify-between flex-wrap gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>Transaction History</h1>
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>All your wallet activity in one place</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
             <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="btn-secondary text-sm"
+                className="btn-secondary justify-center text-sm"
                 title="Show or hide transaction filters"
             >
               <Filter size={14} /> Filters
             </button>
             <button
                 onClick={() => setShowStatement(true)}
-                className="btn-secondary text-sm"
+                className="btn-secondary justify-center text-sm"
                 title="Export transactions as CSV statement"
             >
               <Download size={14} /> Export
@@ -218,8 +218,8 @@ export default function Transactions() {
 
         {/* Filters */}
         {showFilters && (
-            <div className="card p-4 flex flex-wrap gap-4 animate-slide-up">
-              <div>
+            <div className="card animate-slide-up grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+              <div className="min-w-0">
                 <label className="label">Type</label>
                 <select className="input-field py-2 text-sm"
                         value={filters.type} onChange={e => setFilters(f => ({ ...f, type: e.target.value }))}>
@@ -227,7 +227,7 @@ export default function Transactions() {
                   {['TOPUP', 'TRANSFER', 'WITHDRAW', 'CASHBACK', 'REDEEM'].map(t => <option key={t}>{t}</option>)}
                 </select>
               </div>
-              <div>
+              <div className="min-w-0">
                 <label className="label">Status</label>
                 <select className="input-field py-2 text-sm"
                         value={filters.status} onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}>
@@ -289,12 +289,12 @@ export default function Transactions() {
                   title="Select end date for statement"
                   value={statementDates.to} onChange={e => setStatementDates(d => ({ ...d, to: e.target.value }))} />
             </div>
-            <div className="flex gap-3">
-              <button onClick={() => setShowStatement(false)} className="btn-secondary flex-1">Cancel</button>
-              <button onClick={previewStatement} disabled={statementLoading} className="btn-secondary flex-1">
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button onClick={() => setShowStatement(false)} className="btn-secondary flex-1 justify-center">Cancel</button>
+              <button onClick={previewStatement} disabled={statementLoading} className="btn-secondary flex-1 justify-center">
                 {statementLoading ? 'Loading…' : 'Preview'}
               </button>
-              <button onClick={downloadStatement} className="btn-primary flex-1">
+              <button onClick={downloadStatement} className="btn-primary flex-1 justify-center">
                 <FileText size={14} /> Download CSV
               </button>
             </div>
@@ -311,7 +311,7 @@ export default function Transactions() {
                   ) : (
                       <div className="space-y-2 max-h-64 overflow-y-auto">
                         {statementPreview.map((entry, index) => (
-                            <div key={entry.id || entry.referenceId || index} className="flex items-center justify-between rounded-lg px-3 py-2" style={{ background: 'var(--bg-secondary)' }}>
+                            <div key={entry.id || entry.referenceId || index} className="flex flex-col gap-2 rounded-lg px-3 py-2 sm:flex-row sm:items-center sm:justify-between" style={{ background: 'var(--bg-secondary)' }}>
                               <div className="min-w-0">
                                 <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{entry.description || entry.type || 'Statement entry'}</p>
                                 <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{fmt.datetime(entry.createdAt || entry.transactionDate)}</p>
@@ -347,11 +347,11 @@ export default function Transactions() {
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
               Our support team will review your dispute within 2–3 business days.
             </p>
-            <div className="flex gap-3">
-              <button onClick={() => setDisputeModal(null)} className="btn-secondary flex-1">Cancel</button>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button onClick={() => setDisputeModal(null)} className="btn-secondary flex-1 justify-center">Cancel</button>
               <button
                   onClick={() => { toast.success("Dispute raised! We'll reach out soon."); setDisputeModal(null) }}
-                  className="btn-primary flex-1"
+                  className="btn-primary flex-1 justify-center"
               >
                 Submit Dispute
               </button>

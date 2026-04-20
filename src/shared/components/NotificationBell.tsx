@@ -58,7 +58,7 @@ export default function NotificationBell() {
 
       {open && (
         <div
-          className="absolute right-0 mt-2 w-[92vw] max-w-sm rounded-2xl shadow-2xl overflow-hidden border animate-slide-up"
+          className="absolute right-0 mt-2 w-[92vw] max-w-sm overflow-hidden rounded-2xl border shadow-2xl animate-slide-up sm:w-[24rem]"
           style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
           role="dialog"
           aria-label="Notification center"
@@ -137,4 +137,3 @@ export default function NotificationBell() {
     </div>
   )
 }
-

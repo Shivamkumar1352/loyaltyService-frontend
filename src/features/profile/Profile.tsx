@@ -103,7 +103,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 animate-slide-up">
+    <div className="mx-auto max-w-2xl space-y-6 animate-slide-up">
       <div>
         <h1 className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>Profile & KYC</h1>
         <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Manage your account details</p>
@@ -117,7 +117,7 @@ export default function Profile() {
       )}
 
       {/* Avatar + KYC badge */}
-      <div className="card p-6 flex items-center gap-5">
+      <div className="card flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:gap-5 sm:p-6">
         <div className="relative flex-shrink-0">
           <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-white text-2xl font-black"
             style={{ background: 'linear-gradient(135deg, var(--brand), var(--brand-dark))' }}>
@@ -139,7 +139,7 @@ export default function Profile() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--bg-tertiary)' }}>
+      <div className="flex flex-col gap-1 rounded-xl p-1 sm:flex-row" style={{ background: 'var(--bg-tertiary)' }}>
         {[['profile', 'Profile Details'], ['kyc', 'KYC Verification']].map(([val, label]) => (
           <button key={val} onClick={() => setActiveTab(val)}
             className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
@@ -188,9 +188,9 @@ export default function Profile() {
                 />
                 <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Email cannot be changed</p>
               </div>
-              <div className="flex gap-3">
-                <button type="button" onClick={() => setEditMode(false)} className="btn-secondary flex-1">Cancel</button>
-                <button type="submit" disabled={saving} className="btn-primary flex-1">
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <button type="button" onClick={() => setEditMode(false)} className="btn-secondary flex-1 justify-center">Cancel</button>
+                <button type="submit" disabled={saving} className="btn-primary flex-1 justify-center">
                   {saving ? 'Saving…' : 'Save Changes'}
                 </button>
               </div>
@@ -204,7 +204,7 @@ export default function Profile() {
                 ['Status', profile?.status],
                 ['Member since', fmt.date(profile?.createdAt)],
               ].map(([k, v]) => (
-                <div key={k} className="flex justify-between py-2 border-b last:border-0"
+                <div key={k} className="flex flex-col gap-1 border-b py-2 last:border-0 sm:flex-row sm:items-center sm:justify-between"
                   style={{ borderColor: 'var(--border)' }}>
                   <span className="text-sm" style={{ color: 'var(--text-muted)' }}>{k}</span>
                   <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{v || '—'}</span>
@@ -222,7 +222,7 @@ export default function Profile() {
           {/* Current status */}
           <div className="card p-5">
             <p className="text-sm font-bold mb-3" style={{ color: 'var(--text-primary)' }}>Verification Status</p>
-            <div className="flex items-center gap-3">
+            <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center"
                 style={{ background: kycUi.bg, color: kycUi.color }}>
                 {kycUi.icon}

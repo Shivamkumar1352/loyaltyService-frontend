@@ -9,7 +9,7 @@ type LayoutTopbarProps = {
 export function LayoutTopbar({ onOpenMenu, actions }: LayoutTopbarProps) {
   return (
     <header
-      className="sticky top-0 z-20 flex h-14 items-center justify-between px-4 lg:px-6"
+      className="sticky top-0 z-20 flex min-h-14 items-center justify-between px-4 py-2 sm:px-5 lg:px-6"
       style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)' }}
     >
       <button

@@ -39,9 +39,9 @@ export function TransferConfirmCard({ mode, formData, loading, cooldownSeconds, 
             ['Amount', fmt.currency(formData?.amount)],
             ['Note', formData?.description || '—'],
           ].map(([key, value]) => (
-            <div key={key} className="flex justify-between text-sm">
+            <div key={key} className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3">
               <span style={{ color: 'var(--text-muted)' }}>{key}</span>
-              <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{value}</span>
+              <span className="break-words font-semibold sm:text-right" style={{ color: 'var(--text-primary)' }}>{value}</span>
             </div>
           ))}
         </div>
@@ -52,9 +52,9 @@ export function TransferConfirmCard({ mode, formData, loading, cooldownSeconds, 
             : '⚠️ Withdrawals will reduce your wallet balance immediately after processing.'}
         </p>
       </div>
-      <div className="flex gap-3">
-        <button onClick={onBack} className="btn-secondary flex-1">← Back</button>
-        <button onClick={onConfirm} disabled={loading || cooldownSeconds > 0} className="btn-primary flex-1">
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <button onClick={onBack} className="btn-secondary flex-1 justify-center">← Back</button>
+        <button onClick={onConfirm} disabled={loading || cooldownSeconds > 0} className="btn-primary flex-1 justify-center">
           {loading
             ? (mode === 'transfer' ? 'Sending…' : 'Processing…')
             : cooldownSeconds > 0

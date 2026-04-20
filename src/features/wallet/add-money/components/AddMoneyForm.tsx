@@ -52,7 +52,7 @@ export function AddMoneyForm({
         />
         {errors.amount && <p className="mt-1 text-center text-xs text-red-500">{errors.amount.message}</p>}
 
-        <div className="mt-4 grid grid-cols-3 gap-2">
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
           {QUICK_AMOUNTS.map((quickAmount) => (
             <button
               key={quickAmount}
@@ -83,13 +83,13 @@ export function AddMoneyForm({
 
       <div className="card p-5">
         <label className="label mb-3 block">Payment Method</label>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {PAYMENT_METHODS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               type="button"
               onClick={() => onMethodChange(id)}
-              className="flex items-center gap-3 rounded-xl border-2 p-3 text-sm font-medium transition-all"
+              className="flex items-center gap-3 rounded-xl border-2 p-3 text-left text-sm font-medium transition-all"
               style={
                 method === id
                   ? {

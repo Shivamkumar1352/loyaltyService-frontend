@@ -8,7 +8,7 @@ type TransferModeToggleProps = {
 
 export function TransferModeToggle({ mode, onChange }: TransferModeToggleProps) {
   return (
-    <div className="mb-6 flex gap-1 rounded-xl p-1" style={{ background: 'var(--bg-tertiary)' }}>
+    <div className="mb-6 flex flex-col gap-1 rounded-xl p-1 sm:flex-row" style={{ background: 'var(--bg-tertiary)' }}>
       {TRANSFER_TABS.map(([value, label]) => (
         <button
           key={value}

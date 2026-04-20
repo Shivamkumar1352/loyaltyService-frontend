@@ -23,11 +23,11 @@ export function Modal({ open, onClose, title, children, size = 'md' }: {
   if (!open) return null
   const widths = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-lg', xl: 'max-w-2xl' }
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 animate-fade-in">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className={cn('card relative w-full animate-slide-up p-6', widths[size])}>
+      <div className={cn('card relative max-h-[calc(100dvh-1.5rem)] w-full overflow-y-auto animate-slide-up p-4 sm:max-h-[calc(100dvh-2rem)] sm:p-6', widths[size])}>
         {title && (
-          <div className="flex items-center justify-between mb-5">
+          <div className="mb-5 flex items-center justify-between gap-3">
             <h3 className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>{title}</h3>
             <button
               onClick={onClose}
@@ -112,7 +112,7 @@ export function Table({ columns, data, loading, emptyText = 'No data' }: {
 }) {
   return (
     <div className="overflow-x-auto rounded-xl" style={{ border: '1px solid var(--border)' }}>
-      <table className="w-full text-sm">
+      <table className="w-full min-w-[640px] text-sm">
         <thead>
           <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-tertiary)' }}>
             {columns.map((c) => (

@@ -52,7 +52,7 @@ export default function ForgotPassword() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: 'var(--bg-primary)' }}>
+    <div className="flex min-h-screen min-h-[100dvh] items-center justify-center px-4 py-6 sm:p-6" style={{ background: 'var(--bg-primary)' }}>
       <div className="w-full max-w-sm">
         <Link to="/login" className="inline-flex items-center gap-2 text-sm mb-8 transition-opacity hover:opacity-70"
           style={{ color: 'var(--text-muted)' }}>
